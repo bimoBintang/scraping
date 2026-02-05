@@ -1,6 +1,6 @@
 """
-TikTok Scraper Package v4.0
-Advanced scraper dengan BFS/DFS, DOM manipulation, rotation, delays, dan export
+TikTok Scraper Package v4.2.0
+Advanced scraper with stealth, BFS/DFS, DOM manipulation, rotation, delays, export
 """
 
 from .models import TikTokProfile
@@ -15,13 +15,25 @@ from .algorithms import (
     InfluenceScorer,
     CommunityDetector
 )
-from .rotation import UserAgentRotator, ProxyRotator, Proxy
+from .rotation import (
+    UserAgentRotator, ProxyRotator, Proxy,
+    ProxyChain, ProxyChainConfig, ResidentialProxyManager, AutoRotatingProxy
+)
 from .delays import DelayManager, get_delay_manager
 from .sniffer import APISniffer
 from .export import DataExporter
 from .reconnaissance import TikTokReconnaissance
 from .injection import TikTokInjector
 from .maintenance import TikTokMaintenance
+
+# Stealth modules
+from .fingerprint import (
+    FingerprintProfile, FingerprintGenerator, 
+    FingerprintSpoofing, IdentityManager
+)
+from .human_behavior import HumanBehavior, HumanMouse, HumanScroll, HumanTyping
+from .isolation import SessionIsolator, EmergencyWipe, IdentityRotationPolicy
+from .async_utils import with_timeout, safe_evaluate, async_retry
 
 __all__ = [
     # Core
@@ -46,10 +58,14 @@ __all__ = [
     # Export
     'DataExporter',
     
-    # Rotation
+    # Rotation & Proxy
     'UserAgentRotator',
     'ProxyRotator', 
     'Proxy',
+    'ProxyChain',
+    'ProxyChainConfig',
+    'ResidentialProxyManager',
+    'AutoRotatingProxy',
     
     # Delays
     'DelayManager',
@@ -58,10 +74,27 @@ __all__ = [
     # Sniffer
     'APISniffer',
     
-    # Utilities (new)
+    # Stealth - Fingerprint
+    'FingerprintProfile',
+    'FingerprintGenerator',
+    'FingerprintSpoofing',
+    'IdentityManager',
+    
+    # Stealth - Human Behavior
+    'HumanBehavior',
+    'HumanMouse',
+    'HumanScroll',
+    'HumanTyping',
+    
+    # Stealth - Isolation
+    'SessionIsolator',
+    'EmergencyWipe',
+    'IdentityRotationPolicy',
+    
+    # Async Utilities
     'with_timeout',
     'safe_evaluate',
     'async_retry',
 ]
 
-__version__ = '4.1.0'
+__version__ = '4.2.0'

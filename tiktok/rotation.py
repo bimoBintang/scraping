@@ -205,3 +205,169 @@ class ProxyRotator:
     @property
     def healthy_count(self) -> int:
         return len(self.get_healthy())
+
+
+# ==================== PROXY CHAIN (MULTI-HOP) ====================
+
+@dataclass
+class ProxyChainConfig:
+    """Configuration for proxy chaining"""
+    chain_length: int = 2  # Number of hops
+    residential_only: bool = False
+    country_lock: Optional[str] = None  # ISO country code
+    rotate_every: int = 10  # Requests before rotation
+
+
+class ProxyChain:
+    """
+    Multi-hop proxy chain for enhanced anonymity
+    Routes traffic through multiple proxies sequentially
+    """
+    
+    def __init__(self, rotator: ProxyRotator, config: Optional[ProxyChainConfig] = None):
+        self.rotator = rotator
+        self.config = config or ProxyChainConfig()
+        self.current_chain: List[Proxy] = []
+        self.request_count = 0
+    
+    def build_chain(self) -> List[Proxy]:
+        """Build a new proxy chain"""
+        healthy = self.rotator.get_healthy()
+        
+        if len(healthy) < self.config.chain_length:
+            print(f"[!] Not enough proxies for chain of {self.config.chain_length}")
+            return healthy
+        
+        # Select proxies for chain
+        chain = random.sample(healthy, self.config.chain_length)
+        self.current_chain = chain
+        
+        print(f"[CHAIN] Built chain with {len(chain)} hops")
+        return chain
+    
+    def get_entry_proxy(self) -> Optional[Proxy]:
+        """Get the entry point proxy (first in chain)"""
+        if not self.current_chain:
+            self.build_chain()
+        
+        self.request_count += 1
+        
+        # Rotate chain if needed
+        if self.request_count >= self.config.rotate_every:
+            self.build_chain()
+            self.request_count = 0
+        
+        return self.current_chain[0] if self.current_chain else None
+    
+    def get_chain_string(self) -> str:
+        """Get human-readable chain description"""
+        return " -> ".join([f"{p.host}:{p.port}" for p in self.current_chain])
+
+
+class ResidentialProxyManager:
+    """
+    Manager for residential proxies
+    Residential IPs are harder to detect than datacenter IPs
+    """
+    
+    # Known residential proxy providers patterns
+    RESIDENTIAL_PATTERNS = [
+        'residential', 'mobile', 'isp', 'home',
+        'smartproxy', 'luminati', 'oxylabs', 'brightdata'
+    ]
+    
+    def __init__(self, rotator: ProxyRotator):
+        self.rotator = rotator
+        self.residential_proxies: List[Proxy] = []
+        self.datacenter_proxies: List[Proxy] = []
+        self._categorize_proxies()
+    
+    def _categorize_proxies(self):
+        """Categorize proxies as residential or datacenter"""
+        for proxy in self.rotator.proxies:
+            is_residential = any(
+                pattern in proxy.host.lower() 
+                for pattern in self.RESIDENTIAL_PATTERNS
+            )
+            
+            if is_residential:
+                self.residential_proxies.append(proxy)
+            else:
+                self.datacenter_proxies.append(proxy)
+    
+    def get_residential(self) -> Optional[Proxy]:
+        """Get a residential proxy"""
+        healthy = [p for p in self.residential_proxies if p.is_healthy]
+        return random.choice(healthy) if healthy else None
+    
+    def get_datacenter(self) -> Optional[Proxy]:
+        """Get a datacenter proxy"""
+        healthy = [p for p in self.datacenter_proxies if p.is_healthy]
+        return random.choice(healthy) if healthy else None
+    
+    def mark_as_residential(self, proxy: Proxy):
+        """Manually mark a proxy as residential"""
+        if proxy not in self.residential_proxies:
+            self.residential_proxies.append(proxy)
+            if proxy in self.datacenter_proxies:
+                self.datacenter_proxies.remove(proxy)
+
+
+class AutoRotatingProxy:
+    """
+    Automatically rotating proxy based on various triggers
+    """
+    
+    def __init__(
+        self,
+        rotator: ProxyRotator,
+        requests_per_proxy: int = 20,
+        rotate_on_error: bool = True,
+        rotate_on_captcha: bool = True
+    ):
+        self.rotator = rotator
+        self.requests_per_proxy = requests_per_proxy
+        self.rotate_on_error = rotate_on_error
+        self.rotate_on_captcha = rotate_on_captcha
+        
+        self.current_proxy: Optional[Proxy] = None
+        self.request_count = 0
+    
+    def get_proxy(self) -> Optional[Proxy]:
+        """Get current or rotated proxy"""
+        if self._should_rotate():
+            self.current_proxy = self.rotator.get_random()
+            self.request_count = 0
+            if self.current_proxy:
+                print(f"[PROXY] Rotated to: {self.current_proxy.host}:{self.current_proxy.port}")
+        
+        self.request_count += 1
+        return self.current_proxy
+    
+    def _should_rotate(self) -> bool:
+        """Check if rotation is needed"""
+        if self.current_proxy is None:
+            return True
+        if self.request_count >= self.requests_per_proxy:
+            return True
+        if not self.current_proxy.is_healthy:
+            return True
+        return False
+    
+    def trigger_rotation(self, reason: str = "manual"):
+        """Force rotation"""
+        print(f"[PROXY] Forced rotation: {reason}")
+        self.current_proxy = self.rotator.get_random()
+        self.request_count = 0
+    
+    def on_error(self):
+        """Handle error event"""
+        if self.rotate_on_error and self.current_proxy:
+            self.current_proxy.mark_failed()
+            self.trigger_rotation("error")
+    
+    def on_captcha(self):
+        """Handle CAPTCHA detection"""
+        if self.rotate_on_captcha:
+            self.trigger_rotation("captcha_detected")
+
