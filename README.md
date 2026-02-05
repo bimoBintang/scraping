@@ -1,108 +1,130 @@
 # TikTok Advanced Scraper v2.0
 
-Advanced TikTok scraper dengan BFS/DFS algorithms, proxy rotation, dan API sniffing.
+# TikTok Advanced Scraper v3.0
 
-## Features
+Advanced TikTok profile scraper menggunakan Playwright dengan fitur lengkap.
 
-| Feature | Description |
-|---------|-------------|
-| **Profile Scraping** | Extract username, followers, likes, bio, etc. |
-| **Following/Followers** | Scrape following & followers list (requires cookies) |
-| **BFS Crawling** | Breadth-first social network traversal |
-| **DFS Crawling** | Depth-first social network traversal |
-| **User-Agent Rotation** | 18+ browser fingerprints |
-| **Proxy Rotation** | HTTP/SOCKS5 with health checking |
-| **Delay + Jitter** | Human-like timing patterns |
-| **API Sniffing** | Capture internal TikTok API calls |
+## ✨ Features
 
-## Installation
+### Scraping
+- 📊 Profile scraping (followers, following, likes, bio)
+- 👥 Following/Followers list
+- 🍪 Cookie injection untuk authenticated sessions
+
+### Graph Algorithms
+- 🔍 **BFS** - Breadth-first crawling (level by level)
+- 🌲 **DFS** - Depth-first crawling (deep exploration)
+- ⭐ **A\* Search** - Find influencers dengan heuristic
+- ↔️ **Bidirectional** - Find shortest path antara 2 user
+- 🎲 **Random Walk** - Sampling representatif dari network
+- 📈 **Influence Score** - PageRank-style ranking
+- 👥 **Community Detection** - Label propagation clustering
+
+### Export
+- 📁 CSV, Excel, JSON Lines
+- 🕸️ GraphML, GEXF (untuk Gephi)
+- 📊 Statistics generation
+
+### Anti-Detection
+- 🔄 User-Agent rotation (18+ browsers)
+- 🌐 Proxy rotation dengan health check
+- ⏱️ Smart delays dengan jitter
+- 📡 API request sniffing
+
+## 🚀 Installation
 
 ```bash
 pip install playwright
 playwright install chromium
 ```
 
-## Quick Start
+## 📖 Usage
 
+### Basic
 ```bash
-# Basic profile
+# Profile saja
 python main.py username
 
-# Save to JSON
+# Save ke JSON
 python main.py username --save
-
-# Following/Followers (requires cookies)
-python main.py username --followers --cookies cookies.json
-python main.py username --following --max 50 --cookies cookies.json
 ```
 
-## Advanced Usage
-
+### Social Features (perlu cookies)
 ```bash
-# BFS crawling - level by level
+# Following/Followers
+python main.py username --followers --cookies cookies.json
+python main.py username --following --cookies cookies.json
+```
+
+### Graph Algorithms
+```bash
+# BFS/DFS crawling
 python main.py username --bfs --depth 2 --cookies cookies.json
+python main.py username --dfs --depth 3 --cookies cookies.json
 
-# DFS crawling - deep first
-python main.py username --dfs --depth 2 --cookies cookies.json
+# A* Search (cari influencer)
+python main.py username --astar --depth 3 --cookies cookies.json
 
-# With proxy
+# Find path antara 2 user
+python main.py user1 --bidirectional user2 --cookies cookies.json
+
+# Random walk sampling
+python main.py username --random-walk --walks 10 --steps 20 --cookies cookies.json
+
+# Influence scoring
+python main.py username --influence --max 100 --cookies cookies.json
+
+# Community detection
+python main.py username --community --max 100 --cookies cookies.json
+```
+
+### Export Options
+```bash
+# Export ke CSV
+python main.py username --bfs --export csv --cookies cookies.json
+
+# Export ke Excel
+python main.py username --bfs --export excel --cookies cookies.json
+
+# Export ke GraphML (untuk Gephi)
+python main.py username --bfs --export graphml --cookies cookies.json
+
+# Dengan statistics
+python main.py username --bfs --export csv --stats --cookies cookies.json
+```
+
+### Anti-Detection
+```bash
+# Dengan proxy
 python main.py username --proxy-file proxies.txt
 
-# Delay modes: aggressive|normal|cautious|stealth
-python main.py username --delay stealth
-
-# Enable API sniffing
-python main.py username --sniff --save
+# Delay modes: aggressive, normal, cautious, stealth
+python main.py username --delay cautious
 ```
 
-## Cookie Setup
+## 🍪 Cookie Setup
 
-1. Install [Cookie-Editor](https://cookie-editor.com/) extension
-2. Login to TikTok
-3. Click Cookie-Editor → Export → JSON
-4. Save as `cookies.json`
-5. Use: `--cookies cookies.json`
+1. Install browser extension "Cookie-Editor"
+2. Login ke TikTok
+3. Export cookies sebagai JSON
+4. Simpan sebagai `cookies.json`
 
-## CLI Options
-
-| Option | Description |
-|--------|-------------|
-| `--save`, `-s` | Save results to JSON |
-| `--cookies`, `-c` | Cookie file path |
-| `--max`, `-m` | Max results (default: 100) |
-| `--following`, `-f` | Scrape following list |
-| `--followers`, `-F` | Scrape followers list |
-| `--bfs` | BFS network crawling |
-| `--dfs` | DFS network crawling |
-| `--depth` | Crawl depth (default: 2) |
-| `--proxy-file` | Proxy list file |
-| `--delay` | Delay profile |
-| `--sniff` | Enable API sniffing |
-| `--headless`, `-H` | Headless mode |
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 tiktok/
 ├── __init__.py      # Package exports
 ├── models.py        # TikTokProfile dataclass
-├── browser.py       # Browser + rotation + proxy
-├── parsers.py       # JSON extraction
-├── scraper.py       # Core scraper
-├── algorithms.py    # BFS, DFS, Priority Queue
-├── rotation.py      # User-Agent & Proxy rotation
-├── delays.py        # Delay + jitter
+├── browser.py       # Playwright browser manager
+├── scraper.py       # Core scraping logic
+├── algorithms.py    # BFS, DFS, A*, Bidirectional, etc
+├── export.py        # CSV, Excel, GraphML export
+├── rotation.py      # UA & Proxy rotation
+├── delays.py        # Smart delays
+├── parsers.py       # HTML/JSON parsers
 └── sniffer.py       # API interception
 ```
 
-## Proxy File Format
-
-```
-# proxies.txt
-http://host:port
-socks5://user:pass@host:port
-```
-
-## License
+## 📄 License
 
 MIT

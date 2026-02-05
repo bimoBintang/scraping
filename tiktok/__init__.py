@@ -6,7 +6,15 @@ Advanced scraper dengan BFS/DFS, rotation, delays, dan API sniffing
 from .models import TikTokProfile
 from .scraper import TikTokScraper
 from .browser import BrowserManager
-from .algorithms import GraphCrawler, crawl_network
+from .algorithms import (
+    GraphCrawler, 
+    crawl_network,
+    AStarCrawler,
+    BidirectionalSearch,
+    RandomWalkSampler,
+    InfluenceScorer,
+    CommunityDetector
+)
 from .rotation import UserAgentRotator, ProxyRotator, Proxy
 from .delays import DelayManager, get_delay_manager
 from .sniffer import APISniffer
@@ -20,6 +28,11 @@ __all__ = [
     # Algorithms
     'GraphCrawler',
     'crawl_network',
+    'AStarCrawler',
+    'BidirectionalSearch',
+    'RandomWalkSampler',
+    'InfluenceScorer',
+    'CommunityDetector',
     
     # Rotation
     'UserAgentRotator',
@@ -34,4 +47,4 @@ __all__ = [
     'APISniffer',
 ]
 
-__version__ = '2.0.0'
+__version__ = '3.0.0'
