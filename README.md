@@ -1,198 +1,108 @@
-# TikTok Scraper
+# TikTok Advanced Scraper v2.0
 
-Scraper profil dan following list TikTok menggunakan Python dengan Playwright browser automation.
+Advanced TikTok scraper dengan BFS/DFS algorithms, proxy rotation, dan API sniffing.
 
-## 📦 Instalasi
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Profile Scraping** | Extract username, followers, likes, bio, etc. |
+| **Following/Followers** | Scrape following & followers list (requires cookies) |
+| **BFS Crawling** | Breadth-first social network traversal |
+| **DFS Crawling** | Depth-first social network traversal |
+| **User-Agent Rotation** | 18+ browser fingerprints |
+| **Proxy Rotation** | HTTP/SOCKS5 with health checking |
+| **Delay + Jitter** | Human-like timing patterns |
+| **API Sniffing** | Capture internal TikTok API calls |
+
+## Installation
 
 ```bash
-# Install dependencies
-pip install requests playwright
-
-# Install browser Chromium
+pip install playwright
 playwright install chromium
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Ambil profil user
-python tiktok_playwright.py username
+# Basic profile
+python main.py username
 
-# Ambil profil + simpan ke JSON
-python tiktok_playwright.py username --save
+# Save to JSON
+python main.py username --save
 
-# Ambil profil + daftar following (perlu cookies)
-python tiktok_playwright.py username --following --cookies tiktok_cookies.json --save
+# Following/Followers (requires cookies)
+python main.py username --followers --cookies cookies.json
+python main.py username --following --max 50 --cookies cookies.json
 ```
 
-## 🍪 Setup Cookies (Untuk Fitur Following)
-
-TikTok memerlukan login untuk melihat daftar following. Ikuti langkah berikut:
-
-### Langkah 1: Install Extension
-- Chrome/Edge: Install [Cookie-Editor](https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm)
-- Firefox: Install [Cookie-Editor](https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/)
-
-### Langkah 2: Login ke TikTok
-1. Buka https://www.tiktok.com
-2. Login dengan akun Anda
-
-### Langkah 3: Export Cookies
-1. Klik icon **Cookie-Editor** di browser (icon berbentuk cookie)
-2. Klik tombol **Export** di bagian bawah
-3. Pilih format **JSON** 
-4. Cookies akan di-copy ke clipboard
-
-### Langkah 4: Simpan ke File
-1. Buat file baru: `tiktok_cookies.json`
-2. Paste isi cookies
-3. Simpan file
-
-### Langkah 5: Gunakan dengan Scraper
-```bash
-python tiktok_playwright.py username --following --cookies tiktok_cookies.json
-```
-
-## 📖 Penggunaan Lengkap
-
-### Scrape Profil
+## Advanced Usage
 
 ```bash
-# Profil satu user
-python tiktok_playwright.py charlidamelio
+# BFS crawling - level by level
+python main.py username --bfs --depth 2 --cookies cookies.json
 
-# Profil multiple users
-python tiktok_playwright.py user1 user2 user3
+# DFS crawling - deep first
+python main.py username --dfs --depth 2 --cookies cookies.json
 
-# Simpan hasil ke JSON
-python tiktok_playwright.py username --save
+# With proxy
+python main.py username --proxy-file proxies.txt
+
+# Delay modes: aggressive|normal|cautious|stealth
+python main.py username --delay stealth
+
+# Enable API sniffing
+python main.py username --sniff --save
 ```
 
-### Scrape Following List (Perlu Cookies)
+## Cookie Setup
 
-```bash
-# Ambil daftar following
-python tiktok_playwright.py username --following --cookies tiktok_cookies.json
+1. Install [Cookie-Editor](https://cookie-editor.com/) extension
+2. Login to TikTok
+3. Click Cookie-Editor → Export → JSON
+4. Save as `cookies.json`
+5. Use: `--cookies cookies.json`
 
-# Batasi jumlah following
-python tiktok_playwright.py username --following --max 50 --cookies tiktok_cookies.json
+## CLI Options
 
-# Simpan ke file
-python tiktok_playwright.py username --following --save --cookies tiktok_cookies.json
-```
+| Option | Description |
+|--------|-------------|
+| `--save`, `-s` | Save results to JSON |
+| `--cookies`, `-c` | Cookie file path |
+| `--max`, `-m` | Max results (default: 100) |
+| `--following`, `-f` | Scrape following list |
+| `--followers`, `-F` | Scrape followers list |
+| `--bfs` | BFS network crawling |
+| `--dfs` | DFS network crawling |
+| `--depth` | Crawl depth (default: 2) |
+| `--proxy-file` | Proxy list file |
+| `--delay` | Delay profile |
+| `--sniff` | Enable API sniffing |
+| `--headless`, `-H` | Headless mode |
 
-### Mode Browser
-
-```bash
-# Mode Visible (DEFAULT - rekomendasi)
-python tiktok_playwright.py username
-
-# Mode Headless (bisa kena CAPTCHA)
-python tiktok_playwright.py username --headless
-```
-
-## ⚙️ Opsi CLI
-
-| Flag | Short | Deskripsi |
-|------|-------|-----------|
-| `--save` | `-s` | Simpan hasil ke file JSON |
-| `--following` | `-f` | Ambil daftar following (perlu cookies) |
-| `--cookies FILE` | `-c FILE` | Path ke file cookies JSON |
-| `--max N` | `-m N` | Maksimal following (default: 100) |
-| `--headless` | `-H` | Jalankan browser tanpa tampilan |
-| `--debug` | `-d` | Simpan HTML untuk debugging |
-| `--output DIR` | `-o DIR` | Direktori output |
-
-## 📁 Output Files
+## Project Structure
 
 ```
-tiktok_username.json          # Data profil
-tiktok_username_following.json # Daftar following
-debug_username_playwright.html # HTML debug (jika --debug)
+tiktok/
+├── __init__.py      # Package exports
+├── models.py        # TikTokProfile dataclass
+├── browser.py       # Browser + rotation + proxy
+├── parsers.py       # JSON extraction
+├── scraper.py       # Core scraper
+├── algorithms.py    # BFS, DFS, Priority Queue
+├── rotation.py      # User-Agent & Proxy rotation
+├── delays.py        # Delay + jitter
+└── sniffer.py       # API interception
 ```
 
-## 📊 Contoh Output
+## Proxy File Format
 
-### Profil JSON
-```json
-{
-  "username": "tiktok",
-  "nickname": "TikTok",
-  "followers": 92800000,
-  "following": 3,
-  "likes": 453500000,
-  "video_count": 1381,
-  "bio": "One TikTok can make a big impact",
-  "verified": true,
-  "private": false
-}
+```
+# proxies.txt
+http://host:port
+socks5://user:pass@host:port
 ```
 
-### Following JSON
-```json
-[
-  {
-    "username": "user1",
-    "profile_url": "https://www.tiktok.com/@user1",
-    "avatar": "https://..."
-  }
-]
-```
+## License
 
-## 🔧 Penggunaan Sebagai Library
-
-```python
-import asyncio
-from tiktok_playwright import TikTokPlaywrightScraper
-
-async def main():
-    async with TikTokPlaywrightScraper(headless=False) as scraper:
-        # Ambil profil
-        profile = await scraper.get_profile("tiktok")
-        print(profile)
-        
-        # Ambil following list
-        following = await scraper.get_following("tiktok", max_count=50)
-        print(f"Following: {len(following)} users")
-
-asyncio.run(main())
-```
-
-## ⚠️ Catatan Penting
-
-1. **Gunakan Mode Visible** - TikTok agresif memblokir headless browser
-2. **Rate Limiting** - Jangan scrape terlalu cepat/banyak
-3. **VPN** - Gunakan VPN jika sering kena rate limit
-4. **CAPTCHA** - Jika muncul CAPTCHA, tunggu beberapa menit
-
-## 📂 File dalam Project
-
-| File | Deskripsi |
-|------|-----------|
-| `tiktok_playwright.py` | Scraper utama dengan Playwright |
-| `tiktok_scraper.py` | Versi ringan dengan requests (tanpa browser) |
-| `README.md` | Dokumentasi ini |
-
-## 🛠️ Troubleshooting
-
-### CAPTCHA Detected
-```bash
-# Gunakan mode visible
-python tiktok_playwright.py username
-
-# Tunggu beberapa menit sebelum retry
-```
-
-### Browser Not Found
-```bash
-# Install browser
-playwright install chromium
-```
-
-### ModuleNotFoundError
-```bash
-pip install playwright requests
-```
-
----
-*Dibuat untuk keperluan edukasi. Gunakan dengan bertanggung jawab.*
+MIT

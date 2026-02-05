@@ -673,11 +673,15 @@ class TikTokPlaywrightScraper:
             await page.screenshot(path=f'debug_{username}_followers.png')
             print(f"[+] Screenshot: debug_{username}_followers.png")
             
-            # Cek apakah private
-            page_content = await page.content()
-            if "following list is private" in page_content.lower() or "followers list is private" in page_content.lower():
-                print("[!] Followers list is private")
-                return []
+            # Cek apakah private - hanya cek dalam modal, bukan seluruh halaman
+            if modal:
+                try:
+                    modal_html = await modal.inner_html()
+                    if "list is private" in modal_html.lower() or "currently hidden" in modal_html.lower():
+                        print("[!] Followers list is private")
+                        return []
+                except:
+                    pass
             
             # Scroll dan kumpulkan data
             print(f"[~] Mengumpulkan followers (max: {max_count})...")
@@ -817,6 +821,7 @@ Untuk fitur following, diperlukan cookies:
     parser.add_argument("usernames", nargs="+", help="Username TikTok (tanpa @)")
     parser.add_argument("--save", "-s", action="store_true", help="Simpan hasil ke file JSON")
     parser.add_argument("--following", "-f", action="store_true", help="Ambil daftar following (perlu cookies)")
+    parser.add_argument("--followers", "-F", action="store_true", help="Ambil daftar followers (perlu cookies)")
     parser.add_argument("--cookies", "-c", help="Path ke file cookies JSON (dari Cookie-Editor)")
     parser.add_argument("--max", "-m", type=int, default=100, help="Maksimal following/followers yang diambil (default: 100)")
     parser.add_argument("--headless", "-H", action="store_true", help="Jalankan browser tanpa tampilan (bisa kena CAPTCHA)")
@@ -886,6 +891,32 @@ Untuk fitur following, diperlukan cookies:
                         print(f"[+] Following list disimpan ke: {following_path}")
                 else:
                     print(f"[X] Tidak dapat mengambil following @{username}")
+            
+            # Jika flag --followers aktif
+            if args.followers:
+                print(f"\n[~] Mengambil daftar followers @{username}...")
+                followers = await scraper.get_followers(username, max_count=args.max)
+                
+                if followers:
+                    print(f"\n+-- Followers List (@{username}) --+")
+                    for i, user in enumerate(followers[:20], 1):  # Tampilkan 20 pertama
+                        nickname = user.get('nickname', '')
+                        print(f"| {i:3}. @{user['username'][:20]:<20} {nickname[:15]}")
+                    
+                    if len(followers) > 20:
+                        print(f"| ... dan {len(followers) - 20} lainnya")
+                    print("+----------------------------------+")
+                    
+                    # Simpan ke file
+                    if args.save:
+                        followers_path = Path(args.output) / f"tiktok_{username}_followers.json"
+                        followers_path.write_text(
+                            json.dumps(followers, indent=2, ensure_ascii=False),
+                            encoding='utf-8'
+                        )
+                        print(f"[+] Followers list disimpan ke: {followers_path}")
+                else:
+                    print(f"[X] Tidak dapat mengambil followers @{username}")
     
     print("\n[OK] Selesai!")
 
