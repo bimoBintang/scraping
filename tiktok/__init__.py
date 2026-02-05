@@ -1,6 +1,6 @@
 """
-TikTok Scraper Package
-Advanced scraper dengan BFS/DFS, rotation, delays, dan API sniffing
+TikTok Scraper Package v4.0
+Advanced scraper dengan BFS/DFS, DOM manipulation, rotation, delays, dan export
 """
 
 from .models import TikTokProfile
@@ -18,6 +18,10 @@ from .algorithms import (
 from .rotation import UserAgentRotator, ProxyRotator, Proxy
 from .delays import DelayManager, get_delay_manager
 from .sniffer import APISniffer
+from .export import DataExporter
+from .reconnaissance import TikTokReconnaissance
+from .injection import TikTokInjector
+from .maintenance import TikTokMaintenance
 
 __all__ = [
     # Core
@@ -34,6 +38,14 @@ __all__ = [
     'InfluenceScorer',
     'CommunityDetector',
     
+    # DOM Manipulation
+    'TikTokReconnaissance',
+    'TikTokInjector',
+    'TikTokMaintenance',
+    
+    # Export
+    'DataExporter',
+    
     # Rotation
     'UserAgentRotator',
     'ProxyRotator', 
@@ -45,6 +57,11 @@ __all__ = [
     
     # Sniffer
     'APISniffer',
+    
+    # Utilities (new)
+    'with_timeout',
+    'safe_evaluate',
+    'async_retry',
 ]
 
-__version__ = '3.0.0'
+__version__ = '4.1.0'

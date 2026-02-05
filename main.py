@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 TikTok Scraper - CLI Entry Point
-Advanced scraper dengan BFS/DFS/A*/Bidirectional, rotation, delays, dan export
+Advanced scraper dengan BFS/DFS/A*/Bidirectional, DOM manipulation, dan export
 """
 
 import json
@@ -20,15 +20,15 @@ from tiktok import (
     CommunityDetector
 )
 from tiktok.export import DataExporter
-
 from tiktok.reconnaissance import TikTokReconnaissance
-
+from tiktok.injection import TikTokInjector
+from tiktok.maintenance import TikTokMaintenance
 
 
 def create_parser() -> argparse.ArgumentParser:
     """Create CLI argument parser"""
     parser = argparse.ArgumentParser(
-        description="TikTok Advanced Scraper v3.0",
+        description="TikTok Advanced Scraper v4.0",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Contoh penggunaan:
@@ -45,6 +45,11 @@ Contoh penggunaan:
   python main.py username --influence --cookies cookies.json
   python main.py username --community --cookies cookies.json
   python main.py user1 --bidirectional user2 --cookies cookies.json
+  
+  # DOM Manipulation (for private accounts)
+  python main.py username --recon --cookies cookies.json     # Reconnaissance phase
+  python main.py username --inject --cookies cookies.json    # Injection phase  
+  python main.py username --full-bypass --cookies cookies.json # Full bypass (recon+inject+maintain)
   
   # Export Options
   python main.py username --bfs --export csv
@@ -87,6 +92,12 @@ Delay Modes:
     parser.add_argument("--influence", action="store_true", help="Calculate influence scores")
     parser.add_argument("--community", action="store_true", help="Detect communities")
     
+    # DOM Manipulation phases
+    parser.add_argument("--recon", action="store_true", help="Run DOM reconnaissance phase")
+    parser.add_argument("--inject", action="store_true", help="Run DOM injection phase")
+    parser.add_argument("--maintain", action="store_true", help="Run maintenance monitoring")
+    parser.add_argument("--full-bypass", action="store_true", help="Run full bypass (recon+inject+maintain)")
+    
     # Export options
     parser.add_argument("--export", choices=['csv', 'excel', 'jsonl', 'graphml', 'gexf'],
                         help="Export format")
@@ -105,6 +116,105 @@ Delay Modes:
     return parser
 
 
+async def run_dom_bypass(scraper, username: str, args) -> dict:
+    """
+    Run full DOM bypass: Reconnaissance -> Injection -> Maintenance
+    For bypassing private following/followers lists
+    """
+    results = {
+        'username': username,
+        'recon': None,
+        'injection': None,
+        'maintenance': None,
+        'data_extracted': []
+    }
+    
+    print(f"\n[===] Starting DOM Bypass for @{username} [===]")
+    
+    # Get browser page
+    context, page = await scraper.browser_manager.new_page(cookies=scraper.cookies)
+    
+    try:
+        # Navigate to profile
+        url = f"https://www.tiktok.com/@{username}"
+        print(f"[~] Navigating to {url}")
+        await page.goto(url, wait_until='domcontentloaded', timeout=30000)
+        await page.wait_for_load_state('networkidle', timeout=15000)
+        
+        # ===== PHASE 1: RECONNAISSANCE =====
+        if args.recon or args.full_bypass:
+            print("\n[PHASE 1] Reconnaissance...")
+            recon = TikTokReconnaissance(page)
+            await recon.start_reconnaissance(username)
+            results['recon'] = recon.generate_recon_report()
+            
+            if args.save:
+                path = Path(args.output) / f"recon_{username}.json"
+                path.write_text(json.dumps(results['recon'], indent=2, default=str), encoding='utf-8')
+                print(f"[+] Recon saved: {path}")
+        
+        # ===== PHASE 2: INJECTION =====
+        if args.inject or args.full_bypass:
+            print("\n[PHASE 2] Injection...")
+            
+            # Need recon data for injection
+            if not results['recon']:
+                print("[~] Running quick recon first...")
+                recon = TikTokReconnaissance(page)
+                await recon.start_reconnaissance(username)
+                results['recon'] = recon.generate_recon_report()
+            
+            injector = TikTokInjector(page, results['recon'])
+            await injector.execute_injection_phase()
+            results['injection'] = injector.get_injection_report()
+            
+            # Extract data after injection
+            if results['injection'].get('data_extracted'):
+                results['data_extracted'] = results['injection']['data_extracted']
+            
+            if args.save:
+                path = Path(args.output) / f"injection_{username}.json"
+                path.write_text(json.dumps(results['injection'], indent=2, default=str), encoding='utf-8')
+                print(f"[+] Injection saved: {path}")
+        
+        # ===== PHASE 3: MAINTENANCE =====
+        if args.maintain or args.full_bypass:
+            print("\n[PHASE 3] Maintenance monitoring...")
+            
+            injection_results = results['injection'].get('results', []) if results['injection'] else []
+            maint = TikTokMaintenance(page, injection_results)
+            await maint.start_maintenance()
+            
+            # Monitor for 30 seconds
+            print("[~] Monitoring for 30 seconds...")
+            await asyncio.sleep(30)
+            
+            await maint.stop_maintenance()
+            results['maintenance'] = maint.get_maintenance_report()
+            
+            if args.save:
+                path = Path(args.output) / f"maintenance_{username}.json"
+                path.write_text(json.dumps(results['maintenance'], indent=2, default=str), encoding='utf-8')
+                print(f"[+] Maintenance saved: {path}")
+        
+        # Print summary
+        print(f"\n[===] DOM Bypass Complete [===]")
+        if results['recon']:
+            print(f"  Recon: {len(results['recon'].get('components', []))} components found")
+        if results['injection']:
+            print(f"  Injection: {results['injection'].get('success_count', 0)} successful")
+        if results['data_extracted']:
+            print(f"  Data: {len(results['data_extracted'])} users extracted")
+        
+        return results
+        
+    except Exception as e:
+        print(f"[X] DOM Bypass error: {e}")
+        return results
+    finally:
+        await context.close()
+
+
 async def main():
     parser = create_parser()
     args = parser.parse_args()
@@ -112,7 +222,8 @@ async def main():
     # Validate
     needs_cookies = (args.following or args.followers or args.bfs or args.dfs or 
                      args.astar or args.bidirectional or args.random_walk or 
-                     args.influence or args.community)
+                     args.influence or args.community or args.recon or args.inject or
+                     args.maintain or args.full_bypass)
     if needs_cookies and not args.cookies:
         print("\n[!] Fitur social memerlukan cookies!")
         print("    Gunakan: --cookies tiktok_cookies.json")
@@ -120,7 +231,7 @@ async def main():
     
     # Header
     print("=" * 60)
-    print("  TikTok Advanced Scraper v3.0")
+    print("  TikTok Advanced Scraper v4.0")
     print("=" * 60)
     print(f"  Mode     : {'Headless' if args.headless else 'Visible'}")
     print(f"  Delay    : {args.delay}")
@@ -129,8 +240,16 @@ async def main():
     if args.proxy_file:
         print(f"  Proxies  : {args.proxy_file}")
     
-    # Show algorithm
-    if args.bfs:
+    # Show algorithm/mode
+    if args.full_bypass:
+        print(f"  Mode     : Full DOM Bypass")
+    elif args.recon:
+        print(f"  Mode     : Reconnaissance Only")
+    elif args.inject:
+        print(f"  Mode     : Injection Only")
+    elif args.maintain:
+        print(f"  Mode     : Maintenance Only")
+    elif args.bfs:
         print(f"  Algorithm: BFS (depth={args.depth})")
     elif args.dfs:
         print(f"  Algorithm: DFS (depth={args.depth})")
@@ -162,7 +281,26 @@ async def main():
         for username in args.usernames:
             print(f"\n{'='*50}")
             
-            # Get profile
+            # ===== DOM BYPASS MODES =====
+            if args.recon or args.inject or args.maintain or args.full_bypass:
+                bypass_results = await run_dom_bypass(scraper, username, args)
+                
+                # Use extracted data for export
+                if bypass_results['data_extracted']:
+                    results = bypass_results['data_extracted']
+                    result_type = "bypass"
+                    
+                    if args.export:
+                        base_name = f"tiktok_{username}_{result_type}"
+                        if args.export == "csv":
+                            exporter.to_csv(results, f"{base_name}.csv")
+                        elif args.export == "excel":
+                            exporter.to_excel(results, f"{base_name}.xlsx")
+                        elif args.export == "jsonl":
+                            exporter.to_jsonl(results, f"{base_name}.jsonl")
+                continue
+            
+            # Get profile first
             profile = await scraper.get_profile(username, save_debug=args.debug)
             
             if profile:
@@ -231,7 +369,6 @@ async def main():
                 )
                 result_type = "influence"
                 
-                # Print top 10
                 if results:
                     print("\n+-- Top Influencers --+")
                     for i, user in enumerate(results[:10], 1):
@@ -248,13 +385,11 @@ async def main():
                     max_users=args.max
                 )
                 
-                # Flatten for export
                 results = []
                 for comm_id, members in communities.items():
                     results.extend(members)
                 result_type = "community"
                 
-                # Print summary
                 print(f"\n+-- Communities ({len(communities)}) --+")
                 for comm_id, members in list(communities.items())[:5]:
                     print(f"| {comm_id}: {len(members)} members")
@@ -353,4 +488,3 @@ def _print_crawl_results(users: list, algorithm: str, username: str, limit: int 
 
 if __name__ == "__main__":
     asyncio.run(main())
-

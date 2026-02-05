@@ -1,5 +1,6 @@
 """
 TikTok DOM Maintenance Phase
+Monitor and re-apply modifications when TikTok resets them
 """
 import asyncio
 import json
@@ -7,14 +8,42 @@ from typing import Dict, List, Optional, Callable
 from playwright.async_api import Page
 import time
 
+from .selectors import PRIVACY_GATE_SELECTORS, FOLLOW_ITEM_SELECTORS, PRIVACY_FLAGS
+from .async_utils import safe_evaluate, TaskManager, IntervalRunner
+
+
 class TikTokMaintenance:
-    def __init__(self, page: Page, injection_results: List[Dict]):
+    """
+    Maintain DOM modifications and monitor for resets
+    
+    Features:
+    - State change monitoring
+    - Mutation observation
+    - Anti-detection monitoring
+    - Auto re-injection
+    """
+    
+    def __init__(
+        self, 
+        page: Page, 
+        injection_results: List[Dict],
+        check_interval: float = 5.0,
+        max_history: int = 100
+    ):
         self.page = page
         self.injection_results = injection_results
+        self.check_interval = check_interval
+        self.max_history = max_history
+        
         self.monitoring = False
         self.modifications_applied = 0
         self.state_resets_detected = 0
         self.reinjections = 0
+        self.start_time = time.time()
+        
+        # Task management
+        self._task_manager = TaskManager()
+        self._interval_runner = IntervalRunner(check_interval)
         
         # Callbacks for different events
         self.on_state_reset: Optional[Callable] = None
@@ -25,6 +54,7 @@ class TikTokMaintenance:
         """Start maintenance monitoring"""
         print("[MAINTENANCE] Starting maintenance phase...")
         self.monitoring = True
+        self.start_time = time.time()
         
         # Setup all monitoring systems
         await self._setup_state_monitoring()
@@ -34,8 +64,8 @@ class TikTokMaintenance:
         
         print("[MAINTENANCE] Maintenance systems active")
         
-        # Start monitoring loop
-        asyncio.create_task(self._monitoring_loop())
+        # Start monitoring loop with task manager
+        self._task_manager.add_task(self._monitoring_loop())
     
     async def _setup_state_monitoring(self):
         """Setup state change monitoring"""

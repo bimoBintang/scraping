@@ -33,9 +33,23 @@ class EventFlow:
     payload_pattern: Optional[str] = None
     frequency: int = 0
 
+from .selectors import (
+    FOLLOWING_CONTAINER_SELECTORS, FOLLOWER_CONTAINER_SELECTORS,
+    PRIVACY_GATE_SELECTORS, FOLLOW_ITEM_SELECTORS, FOLLOW_BUTTON_SELECTORS,
+    STATE_TARGETS, PRIVACY_FLAGS, SelectorHelper
+)
+from .async_utils import with_timeout, safe_evaluate
+
+
 class TikTokReconnaissance:
-    def __init__(self, page: Page):
+    """
+    TikTok DOM Structure Reconnaissance
+    Analyze state management, components, and event flows
+    """
+    
+    def __init__(self, page: Page, timeout: float = 10.0):
         self.page = page
+        self.timeout = timeout
         self.components: List[TikTokComponent] = []
         self.css_selectors: List[CSSSelector] = []
         self.event_flows: List[EventFlow] = []

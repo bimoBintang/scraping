@@ -637,7 +637,7 @@ class TikTokInjector:
             follow_data = await self._extract_follow_data()
             
             return InjectionResult(
-                success=result['events_intercepted'].length > 0,
+                success=len(result.get('events_intercepted', [])) > 0,
                 method="event_listeners",
                 target="dom_events",
                 data_obtained=follow_data,
