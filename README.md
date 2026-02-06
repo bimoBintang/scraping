@@ -1,57 +1,115 @@
-# TikTok Advanced Scraper v2.0
+# TikTok Advanced Scraper v5.0
 
-# TikTok Advanced Scraper v3.0
+🚀 **Enterprise-grade TikTok scraping platform** dengan AI/ML integration, advanced stealth, dan distributed processing.
 
-Advanced TikTok profile scraper menggunakan Playwright dengan fitur lengkap.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Playwright](https://img.shields.io/badge/playwright-latest-green.svg)](https://playwright.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## ✨ Features
+---
 
-### Scraping
-- 📊 Profile scraping (followers, following, likes, bio)
-- 👥 Following/Followers list
-- 🍪 Cookie injection untuk authenticated sessions
+## ✨ What's New in v5.0
+
+- 🤖 **AI/ML Integration** - 11 modules dengan 51+ classes untuk content analysis
+- 🥷 **Advanced Stealth** - Browser fingerprint spoofing, human behavior simulation
+- 🔄 **Session Isolation** - Complete identity rotation dan context management
+- 📊 **Monitoring System** - Real-time metrics, alerts, dan dashboards
+
+---
+
+## 🎯 Features
+
+### Core Scraping
+| Feature | Description |
+|---------|-------------|
+| 📊 Profile Scraping | Followers, following, likes, bio, verification status |
+| 👥 Social Network | Following/followers list extraction |
+| 🍪 Cookie Injection | Authenticated session support |
+| 📡 API Interception | Capture internal TikTok API responses |
 
 ### Graph Algorithms
-- 🔍 **BFS** - Breadth-first crawling (level by level)
-- 🌲 **DFS** - Depth-first crawling (deep exploration)
-- ⭐ **A\* Search** - Find influencers dengan heuristic
-- ↔️ **Bidirectional** - Find shortest path antara 2 user
-- 🎲 **Random Walk** - Sampling representatif dari network
-- 📈 **Influence Score** - PageRank-style ranking
-- 👥 **Community Detection** - Label propagation clustering
+| Algorithm | Use Case |
+|-----------|----------|
+| 🔍 **BFS** | Level-by-level network exploration |
+| 🌲 **DFS** | Deep path exploration |
+| ⭐ **A\* Search** | Find influencers with heuristics |
+| ↔️ **Bidirectional** | Shortest path between 2 users |
+| 🎲 **Random Walk** | Representative network sampling |
+| 📈 **Influence Score** | PageRank-style ranking |
+| 👥 **Community Detection** | Label propagation clustering |
 
-### Export
+### 🤖 AI/ML Integration (NEW!)
+
+```
+tiktok/ai/
+├── preprocessing.py    # Video/audio/text pipeline
+├── nlp.py              # Sentiment, topics, hashtags
+├── anomaly.py          # Bot/spam/fake detection
+├── vision.py           # Object detection (YOLO), OCR
+├── virality.py         # Viral prediction ML
+├── fusion.py           # Cross-modal analysis
+├── explainability.py   # SHAP, counterfactuals
+├── monitoring.py       # Metrics, alerts, dashboard
+├── orchestrator.py     # Workflow management
+├── model_registry.py   # Version control, A/B testing
+└── resilience.py       # Circuit breaker, fallbacks
+```
+
+| Module | Capabilities |
+|--------|--------------|
+| **NLP** | Sentiment analysis (BERT), topic modeling, hashtag trends |
+| **Vision** | Object detection, scene classification, face analysis, OCR |
+| **Anomaly** | Bot detection (Isolation Forest), spam patterns, fake followers |
+| **Virality** | Predict viral potential dengan deep learning |
+| **Fusion** | Early/late/attention-based multimodal fusion |
+| **XAI** | Feature importance, counterfactuals, bias detection |
+
+### 🥷 Stealth & Anti-Detection
+
+| Feature | Description |
+|---------|-------------|
+| 🖥️ **Fingerprint Spoofing** | Canvas, WebGL, fonts, audio, navigator |
+| 🖱️ **Human Behavior** | Bezier curve mouse, natural scrolling, typing patterns |
+| 🔐 **Session Isolation** | Complete context separation, emergency wipe |
+| 🌐 **Proxy Chain** | Multi-hop routing, residential proxy support |
+| 🔄 **Identity Rotation** | Automatic identity switching with policies |
+
+### Export Options
 - 📁 CSV, Excel, JSON Lines
-- 🕸️ GraphML, GEXF (untuk Gephi)
-- 📊 Statistics generation
+- 🕸️ GraphML, GEXF (Gephi compatible)
+- 📊 Auto-generated statistics
 
-### Anti-Detection
-- 🔄 User-Agent rotation (18+ browsers)
-- 🌐 Proxy rotation dengan health check
-- ⏱️ Smart delays dengan jitter
-- 📡 API request sniffing
+---
 
 ## 🚀 Installation
 
+### Basic
 ```bash
 pip install playwright
 playwright install chromium
 ```
 
+### Full AI Features
+```bash
+pip install numpy scikit-learn torch transformers ultralytics opencv-python easyocr
+```
+
+---
+
 ## 📖 Usage
 
-### Basic
+### Basic Scraping
 ```bash
-# Profile saja
+# Profile only
 python main.py username
 
-# Save ke JSON
+# Save to JSON
 python main.py username --save
 ```
 
-### Social Features (perlu cookies)
+### Social Network
 ```bash
-# Following/Followers
+# Following/Followers (requires cookies)
 python main.py username --followers --cookies cookies.json
 python main.py username --following --cookies cookies.json
 ```
@@ -62,69 +120,178 @@ python main.py username --following --cookies cookies.json
 python main.py username --bfs --depth 2 --cookies cookies.json
 python main.py username --dfs --depth 3 --cookies cookies.json
 
-# A* Search (cari influencer)
+# A* Search (find influencers)
 python main.py username --astar --depth 3 --cookies cookies.json
 
-# Find path antara 2 user
+# Path finding between 2 users
 python main.py user1 --bidirectional user2 --cookies cookies.json
 
 # Random walk sampling
 python main.py username --random-walk --walks 10 --steps 20 --cookies cookies.json
 
-# Influence scoring
+# PageRank influence scoring
 python main.py username --influence --max 100 --cookies cookies.json
 
 # Community detection
 python main.py username --community --max 100 --cookies cookies.json
 ```
 
-### Export Options
+### AI Analysis
+```python
+from tiktok.ai import (
+    SentimentAnalyzer, 
+    BotDetector, 
+    ViralityPredictor,
+    WorkflowOrchestrator
+)
+
+# Sentiment Analysis
+analyzer = SentimentAnalyzer()
+result = analyzer.analyze("I love this video! Amazing! 🔥")
+print(f"{result.label}: {result.score:.2f}")  # positive: 1.00
+
+# Bot Detection
+detector = BotDetector()
+bots = detector.detect_bots(profiles, confidence_threshold=0.7)
+
+# Virality Prediction
+predictor = ViralityPredictor()
+score = predictor.predict(video_metadata, profile)
+print(f"Viral potential: {score.tier} ({score.probability:.1%})")
+```
+
+### Stealth Mode
+```python
+from tiktok import (
+    FingerprintSpoofing,
+    HumanMouse,
+    SessionIsolator,
+    AutoRotatingProxy
+)
+
+# Apply stealth fingerprint
+spoof = FingerprintSpoofing()
+await spoof.apply_to_page(page)
+
+# Human-like mouse movement
+mouse = HumanMouse(page)
+await mouse.move_to(500, 300)
+await mouse.click()
+
+# Isolated session with proxy
+isolator = SessionIsolator(browser)
+async with isolator.create_isolated_context(proxy="socks5://...") as ctx:
+    page = await ctx.new_page()
+```
+
+### Export
 ```bash
-# Export ke CSV
+# Export formats
 python main.py username --bfs --export csv --cookies cookies.json
-
-# Export ke Excel
 python main.py username --bfs --export excel --cookies cookies.json
-
-# Export ke GraphML (untuk Gephi)
 python main.py username --bfs --export graphml --cookies cookies.json
 
-# Dengan statistics
+# With statistics
 python main.py username --bfs --export csv --stats --cookies cookies.json
 ```
 
 ### Anti-Detection
 ```bash
-# Dengan proxy
+# With proxy rotation
 python main.py username --proxy-file proxies.txt
 
 # Delay modes: aggressive, normal, cautious, stealth
-python main.py username --delay cautious
+python main.py username --delay stealth
 ```
+
+---
 
 ## 🍪 Cookie Setup
 
 1. Install browser extension "Cookie-Editor"
-2. Login ke TikTok
-3. Export cookies sebagai JSON
-4. Simpan sebagai `cookies.json`
+2. Login to TikTok
+3. Export cookies as JSON
+4. Save as `cookies.json`
+
+---
 
 ## 📁 Project Structure
 
 ```
 tiktok/
-├── __init__.py      # Package exports
-├── models.py        # TikTokProfile dataclass
-├── browser.py       # Playwright browser manager
-├── scraper.py       # Core scraping logic
-├── algorithms.py    # BFS, DFS, A*, Bidirectional, etc
-├── export.py        # CSV, Excel, GraphML export
-├── rotation.py      # UA & Proxy rotation
-├── delays.py        # Smart delays
-├── parsers.py       # HTML/JSON parsers
-└── sniffer.py       # API interception
+├── __init__.py          # Package exports (v4.2.0)
+├── models.py            # TikTokProfile dataclass
+├── browser.py           # Playwright browser manager
+├── scraper.py           # Core scraping logic
+├── algorithms.py        # Graph algorithms
+├── export.py            # Multi-format export
+├── rotation.py          # UA/Proxy rotation + chains
+├── delays.py            # Smart delays with jitter
+├── parsers.py           # HTML/JSON parsers
+├── sniffer.py           # API interception
+│
+├── # Stealth Modules (v4.2.0)
+├── fingerprint.py       # Browser fingerprint spoofing
+├── human_behavior.py    # Human-like behavior simulation
+├── isolation.py         # Session isolation & rotation
+│
+├── # Utility Modules (v4.1.0)
+├── selectors.py         # Centralized CSS selectors
+├── async_utils.py       # Async utilities & retry logic
+│
+└── ai/                  # AI/ML Package (v5.0)
+    ├── __init__.py      # 51 class exports
+    ├── preprocessing.py # Data pipeline
+    ├── resilience.py    # Fault tolerance
+    ├── nlp.py           # NLP analysis
+    ├── anomaly.py       # Bot/spam detection
+    ├── vision.py        # Computer vision
+    ├── virality.py      # Viral prediction
+    ├── orchestrator.py  # Workflow engine
+    ├── monitoring.py    # Metrics & alerts
+    ├── fusion.py        # Multimodal fusion
+    ├── explainability.py # XAI features
+    └── model_registry.py # Model versioning
 ```
+
+---
+
+## 🔧 Dependencies
+
+### Required
+- `playwright` - Browser automation
+- `numpy` - Numerical operations
+
+### Optional (Enhanced Features)
+| Package | Feature |
+|---------|---------|
+| `torch` | Deep learning models |
+| `transformers` | BERT sentiment analysis |
+| `ultralytics` | YOLOv8 object detection |
+| `opencv-python` | Video processing |
+| `easyocr` | Text extraction from images |
+| `scikit-learn` | ML algorithms |
+
+---
+
+## 📊 Version History
+
+| Version | Release | Highlights |
+|---------|---------|------------|
+| v5.0 | 2026-02 | AI/ML Integration (11 modules, 51+ classes) |
+| v4.2 | 2026-02 | Stealth identity protection |
+| v4.1 | 2026-02 | Async utilities, centralized selectors |
+| v3.0 | 2026-01 | Graph algorithms, export formats |
+| v2.0 | 2025-12 | Social network scraping |
+
+---
 
 ## 📄 License
 
-MIT
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
+## ⚠️ Disclaimer
+
+This tool is for educational and research purposes only. Always respect TikTok's Terms of Service and rate limits. The developers are not responsible for any misuse of this software.
