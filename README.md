@@ -108,6 +108,23 @@ tiktok/monitoring/
 | **Dashboard**     | FastAPI + Chart.js, REST API                  |
 | **Webhooks**      | HMAC-SHA256, replay protection, SSRF blocking |
 
+### 🔬 Advanced Social Network Analysis (NEW!)
+
+```
+tiktok/social_analysis/
+├── temporal.py     # Network evolution over time
+├── cascade.py      # Influence propagation tracking
+├── evolution.py    # Community lifecycle analysis
+└── power_law.py    # Statistical distribution analysis
+```
+
+| Module        | Key Features                                                                        |
+| ------------- | ----------------------------------------------------------------------------------- |
+| **Temporal**  | Network snapshots, burstiness coefficient, temporal centrality, persistence metrics |
+| **Cascade**   | Structural virality index, propagation speed, super-spreader identification         |
+| **Evolution** | Merge/split detection, modularity trajectory, community loyalty, boundary spanners  |
+| **Power Law** | α exponent fitting, KS test, Gini inequality, heavy-tailedness, scaling breaks      |
+
 ---
 
 ## 🚀 Installation
@@ -297,6 +314,32 @@ await dispatcher.start()
 await dispatcher.dispatch(event)
 ```
 
+### Social Network Analysis
+
+```python
+from tiktok.social_analysis import (
+    TemporalNetworkAnalyzer, InfluenceCascadeTracker,
+    CommunityEvolutionAnalyzer, PowerLawAnalyzer
+)
+
+# Temporal Analysis
+temporal = TemporalNetworkAnalyzer(interval_hours=24)
+await temporal.capture_snapshot(["user1"], get_connections)
+growth = temporal.get_growth_metrics()
+print(f"Burstiness: {growth.burstiness_coefficient}")
+
+# Cascade Tracking
+tracker = InfluenceCascadeTracker(max_depth=5)
+cascade = await tracker.track_cascade("influencer", get_connections)
+stats = tracker.get_cascade_statistics(cascade.cascade_id)
+print(f"Structural Virality: {stats.structural_virality}")
+
+# Power Law Analysis
+analyzer = PowerLawAnalyzer()
+fit = analyzer.fit_power_law(follower_counts)
+print(f"Alpha: {fit.alpha}, Gini: {analyzer.get_gini_coefficient(follower_counts)}")
+```
+
 ### Anti-Detection
 
 ```bash
@@ -321,51 +364,53 @@ python main.py username --delay stealth
 ## 📁 Project Structure
 
 ```
+
 tiktok/
-├── __init__.py          # Package exports (v4.2.0)
-├── models.py            # TikTokProfile dataclass
-├── browser.py           # Playwright browser manager
-├── scraper.py           # Core scraping logic
-├── algorithms.py        # Graph algorithms
-├── export.py            # Multi-format export
-├── rotation.py          # UA/Proxy rotation + chains
-├── delays.py            # Smart delays with jitter
-├── parsers.py           # HTML/JSON parsers
-├── sniffer.py           # API interception
+├── **init**.py # Package exports (v4.2.0)
+├── models.py # TikTokProfile dataclass
+├── browser.py # Playwright browser manager
+├── scraper.py # Core scraping logic
+├── algorithms.py # Graph algorithms
+├── export.py # Multi-format export
+├── rotation.py # UA/Proxy rotation + chains
+├── delays.py # Smart delays with jitter
+├── parsers.py # HTML/JSON parsers
+├── sniffer.py # API interception
 │
 ├── # Stealth Modules (v4.2.0)
-├── fingerprint.py       # Browser fingerprint spoofing
-├── human_behavior.py    # Human-like behavior simulation
-├── isolation.py         # Session isolation & rotation
+├── fingerprint.py # Browser fingerprint spoofing
+├── human_behavior.py # Human-like behavior simulation
+├── isolation.py # Session isolation & rotation
 │
 ├── # Utility Modules (v4.1.0)
-├── selectors.py         # Centralized CSS selectors
-├── async_utils.py       # Async utilities & retry logic
+├── selectors.py # Centralized CSS selectors
+├── async_utils.py # Async utilities & retry logic
 │
-└── ai/                  # AI/ML Package (v5.0)
-    ├── __init__.py      # 51 class exports
-    ├── preprocessing.py # Data pipeline
-    ├── resilience.py    # Fault tolerance
-    ├── nlp.py           # NLP analysis
-    ├── anomaly.py       # Bot/spam detection
-    ├── vision.py        # Computer vision
-    ├── virality.py      # Viral prediction
-    ├── orchestrator.py  # Workflow engine
-    ├── monitoring.py    # Metrics & alerts
-    ├── fusion.py        # Multimodal fusion
-    ├── explainability.py # XAI features
-    └── model_registry.py # Model versioning
+└── ai/ # AI/ML Package (v5.0)
+├── **init**.py # 51 class exports
+├── preprocessing.py # Data pipeline
+├── resilience.py # Fault tolerance
+├── nlp.py # NLP analysis
+├── anomaly.py # Bot/spam detection
+├── vision.py # Computer vision
+├── virality.py # Viral prediction
+├── orchestrator.py # Workflow engine
+├── monitoring.py # Metrics & alerts
+├── fusion.py # Multimodal fusion
+├── explainability.py # XAI features
+└── model_registry.py # Model versioning
 │
-└── monitoring/          # Real-Time Monitoring (v5.1)
-    ├── __init__.py      # Package exports
-    ├── events.py        # EventEmitter + LRU cache
-    ├── metrics.py       # EMA, time windows
-    ├── anomaly.py       # Z-score detection
-    ├── rate_limiter.py  # Token Bucket
-    ├── websocket_server.py # Delta encoding
-    ├── webhooks.py      # HMAC + SSRF protection
-    ├── notifications/   # Telegram + Circuit Breaker
-    └── dashboard/       # FastAPI + Chart.js
+└── monitoring/ # Real-Time Monitoring (v5.1)
+├── **init**.py # Package exports
+├── events.py # EventEmitter + LRU cache
+├── metrics.py # EMA, time windows
+├── anomaly.py # Z-score detection
+├── rate_limiter.py # Token Bucket
+├── websocket_server.py # Delta encoding
+├── webhooks.py # HMAC + SSRF protection
+├── notifications/ # Telegram + Circuit Breaker
+└── dashboard/ # FastAPI + Chart.js
+
 ```
 
 ---
@@ -417,3 +462,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 ## ⚠️ Disclaimer
 
 This tool is for educational and research purposes only. Always respect TikTok's Terms of Service and rate limits. The developers are not responsible for any misuse of this software.
+
+```
+
+```
