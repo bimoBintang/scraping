@@ -17,6 +17,11 @@ from .wishlist import WishlistManager
 from .price_tracker import PriceTracker, PriceAlert
 from .exporter import ShopeeExporter
 
+try:
+    from .browser import ShopeeBrowser
+except ImportError:
+    ShopeeBrowser = None
+
 
 __all__ = [
     # Models
