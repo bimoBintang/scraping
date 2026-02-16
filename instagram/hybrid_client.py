@@ -24,6 +24,7 @@ from .rate_limiter import AdaptiveRateLimiter
 from .account_router import AccountRouter
 from .predictive_crawler import PatternAnalyzer, CrawlScheduler
 from .proxy_rotator import ProxyManager
+from .highlights_crawler import HighlightsCrawler, HighlightReel
 from .utils import (
     generate_web_headers,
     generate_mobile_headers,
@@ -311,6 +312,39 @@ class HybridInstagramClient:
         pattern = self.pattern_analyzer.analyze(posts, username)
         self.crawler_scheduler.save_pattern(pattern)
         return pattern
+    
+    def get_highlights(self, username: str, fetch_items: bool = True) -> List:
+        """
+        Fetch Story Highlights for a user.
+        
+        Args:
+            username: Instagram username
+            fetch_items: If True, fetch media items for each reel
+            
+        Returns:
+            List of HighlightReel
+        """
+        print(f"\n[*] Fetching highlights for @{username}...")
+        
+        # Need user_id for highlights API
+        user_id = self._resolve_user_id(username)
+        if not user_id:
+            print("  [!] Could not resolve user_id — highlights require authentication")
+            return []
+        
+        # Algorithm 9: Story Highlights Detection & Crawling
+        crawler = HighlightsCrawler(
+            session=self.session,
+            make_request=self._make_request,
+            cookies=self.cookies,
+        )
+        
+        reels = crawler.get_all_highlights(user_id, fetch_items=fetch_items)
+        
+        if reels:
+            crawler.print_highlights_summary(reels)
+        
+        return reels
     
     def get_followers(self, username: str, count: int = 100) -> List[Dict]:
         """Get followers list (requires cookies)"""

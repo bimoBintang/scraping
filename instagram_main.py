@@ -35,7 +35,7 @@ from instagram import (
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Instagram Scraper v1.4 — Hybrid API + RL + Account Rotation + Predictive Crawling + Proxy Rotation",
+        description="Instagram Scraper v1.5 — Hybrid API + RL + Proxy + Account Rotation + Highlights",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -62,6 +62,7 @@ Examples:
     parser.add_argument('--discover-doc-ids', action='store_true', help='Discover GraphQL doc_ids')
     parser.add_argument('--analyze-pattern', action='store_true', help='Analyze posting pattern for usernames')
     parser.add_argument('--schedule', action='store_true', help='Show predicted crawl schedule')
+    parser.add_argument('--highlights', action='store_true', help='Fetch story highlights')
     
     # Options
     parser.add_argument('--count', type=int, default=12, help='Number of items to fetch (default: 12)')
@@ -109,7 +110,7 @@ Examples:
     proxy_label = f"🌐 {len(client.proxy_manager.proxies)} Proxies" if client.proxy_manager else "Direct Connection"
     print(f"""
 ╔══════════════════════════════════════════════════╗
-║     📸 Instagram Scraper v1.4                   ║
+║     📸 Instagram Scraper v1.5                   ║
 ║     Hybrid API + Browser + Mobile API           ║
 ║     {rl_label:<42} ║
 ║     {acct_label:<42} ║
@@ -190,6 +191,21 @@ Examples:
                     print(f"  [+] Pattern saved to instagram_{username}_pattern.json")
             else:
                 print(f"  [!] Not enough posts to analyze pattern for @{username}")
+        return
+    
+    # ==================== HIGHLIGHTS ====================
+    
+    if args.highlights and args.usernames:
+        for username in args.usernames:
+            username = username.lstrip('@').strip()
+            reels = client.get_highlights(username, fetch_items=True)
+            
+            if reels and (args.save or args.export):
+                highlights_data = [r.to_dict() for r in reels]
+                with open(Path(args.output) / f"instagram_{username}_highlights.json", 'w', encoding='utf-8') as f:
+                    json.dump(highlights_data, f, indent=2, ensure_ascii=False)
+                total_items = sum(len(r.items) for r in reels)
+                print(f"  [+] Saved {len(reels)} reels ({total_items} items) to instagram_{username}_highlights.json")
         return
     
     # ==================== PROFILE SCRAPING ====================
