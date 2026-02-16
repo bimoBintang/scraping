@@ -2,7 +2,7 @@
 """
 Instagram Scraper - CLI Entry Point
 Advanced scraper dengan Hybrid API, GraphQL auto-discovery, multi-fallback parsing,
-dan location-based user clustering.
+location-based user clustering, dan adaptive RL rate limiting.
 
 Usage:
     python instagram_main.py cristiano                      # Profile
@@ -28,12 +28,13 @@ from instagram import (
     DocIdDiscovery,
     LocationClusterAnalyzer,
     InstagramProfile,
+    AdaptiveRateLimiter,
 )
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Instagram Scraper v1.0 — Hybrid API + Browser + Mobile API",
+        description="Instagram Scraper v1.1 — Hybrid API + Browser + Mobile API + RL Rate Limiter",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -66,6 +67,9 @@ Examples:
     parser.add_argument('--export', choices=['json', 'csv', 'excel'], help='Export format')
     parser.add_argument('--output', type=str, default='.', help='Output directory')
     parser.add_argument('--layer', choices=['web_api', 'browser', 'mobile_api'], help='Force specific layer')
+    parser.add_argument('--no-rl', action='store_true', help='Disable RL rate limiter')
+    parser.add_argument('--rl-stats', action='store_true', help='Show RL rate limiter training stats')
+    parser.add_argument('--rl-debug', action='store_true', help='Enable RL debug output')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     
     args = parser.parse_args()
@@ -79,6 +83,8 @@ Examples:
     client = HybridInstagramClient(
         cookies_file=args.cookies,
         debug_dir=args.output,
+        enable_rl=not args.no_rl,
+        rl_debug=args.rl_debug,
     )
     exporter = InstagramExporter(output_dir=args.output)
     
@@ -88,10 +94,12 @@ Examples:
             if name != args.layer:
                 client.layers[name].status = __import__('instagram.hybrid_client', fromlist=['LayerStatus']).LayerStatus.DISABLED
     
-    print("""
+    rl_label = "🧠 RL Rate Limiter" if not args.no_rl else "Static Delay"
+    print(f"""
 ╔══════════════════════════════════════════════════╗
-║     📸 Instagram Scraper v1.0                   ║
+║     📸 Instagram Scraper v1.1                   ║
 ║     Hybrid API + Browser + Mobile API           ║
+║     {rl_label:<42} ║
 ╚══════════════════════════════════════════════════╝
     """)
     
@@ -257,6 +265,19 @@ Examples:
     for layer, count in stats['layer_usage'].items():
         if count > 0:
             print(f"    {layer}: {count} requests")
+    
+    # RL Rate Limiter stats
+    if args.rl_stats and client.rate_limiter:
+        client.rate_limiter.print_stats()
+        client.rate_limiter.print_learned_strategy()
+    elif client.rate_limiter and stats.get('rl_rate_limiter'):
+        rl = stats['rl_rate_limiter']
+        print(f"    RL steps: {rl['total_steps']}, ε={rl['epsilon']:.4f}, "
+              f"dominant: {rl['dominant_action']}")
+    
+    # Save RL policy
+    if client.rate_limiter:
+        client.rate_limiter.save_policy()
     
     print("\n  Done! 🎉")
 

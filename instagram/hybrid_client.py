@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from .models import InstagramProfile, InstagramPost
 from .parsers import InstagramParser
 from .discovery import DocIdDiscovery
+from .rate_limiter import AdaptiveRateLimiter
 from .utils import (
     generate_web_headers,
     generate_mobile_headers,
@@ -105,6 +106,8 @@ class HybridInstagramClient:
         cookies_file: Optional[str] = None,
         debug_dir: str = ".",
         enable_discovery: bool = True,
+        enable_rl: bool = True,
+        rl_debug: bool = False,
     ):
         self.cookies = load_cookies(cookies_file) if cookies_file else []
         self.parser = InstagramParser(debug_dir=debug_dir)
@@ -113,6 +116,17 @@ class HybridInstagramClient:
         
         # Session for connection reuse
         self.session = requests.Session()
+        
+        # Algorithm 5: Adaptive Rate Limiter (Q-Learning)
+        self.enable_rl = enable_rl
+        if enable_rl:
+            self.rate_limiter = AdaptiveRateLimiter(
+                policy_file=str(Path(debug_dir) / "instagram_rl_policy.json"),
+                debug=rl_debug,
+            )
+            print("  [🧠] Adaptive Rate Limiter (Q-Learning) aktif")
+        else:
+            self.rate_limiter = None
         
         # Layer health tracking
         self.layers: Dict[str, LayerHealth] = {
@@ -165,16 +179,23 @@ class HybridInstagramClient:
                     health.mark_success()
                     self._stats['layer_usage'][layer_name] += 1
                     self._stats['total_requests'] += 1
+                    if self.rate_limiter:
+                        self.rate_limiter.record_result(success=True)
                     print(f"  [✓] Success via {layer_name}")
                     return profile
                 else:
                     health.mark_failure()
+                    if self.rate_limiter:
+                        self.rate_limiter.record_result(success=False)
                     print(f"  [✗] Layer {layer_name}: no data returned")
             except Exception as e:
                 health.mark_failure()
+                is_429 = "429" in str(e) or "rate limit" in str(e).lower()
+                if self.rate_limiter:
+                    self.rate_limiter.record_result(success=False, rate_limited=is_429)
                 print(f"  [✗] Layer {layer_name} error: {e}")
             
-            smart_delay(1, 2)
+            self._adaptive_delay(1, 2)
         
         print(f"  [!] All layers failed for @{username}")
         return None
@@ -210,7 +231,7 @@ class HybridInstagramClient:
                 break
             cursor = pagination.get('end_cursor', '')
             
-            smart_delay(1.5, 3)
+            self._adaptive_delay(1.5, 3)
         
         print(f"  [✓] Fetched {len(posts)} posts")
         return posts[:count]
@@ -258,7 +279,7 @@ class HybridInstagramClient:
     
     def get_stats(self) -> Dict:
         """Get client usage statistics"""
-        return {
+        stats = {
             **self._stats,
             'layer_health': {
                 name: {
@@ -270,6 +291,9 @@ class HybridInstagramClient:
                 for name, h in self.layers.items()
             }
         }
+        if self.rate_limiter:
+            stats['rl_rate_limiter'] = self.rate_limiter.get_stats()
+        return stats
     
     # ==================== LAYER 1: WEB API ====================
     
@@ -527,7 +551,7 @@ class HybridInstagramClient:
                 break
             cursor = pagination.get('end_cursor', '')
             
-            smart_delay(2, 4)
+            self._adaptive_delay(2, 4)
         
         print(f"  [✓] Fetched {len(users)} {list_type}")
         return users[:count]
@@ -588,6 +612,15 @@ class HybridInstagramClient:
         except Exception as e:
             print(f"  [!] REST API social error: {e}")
         return None
+    
+    # ==================== DELAY & HELPERS ====================
+    
+    def _adaptive_delay(self, min_sec: float, max_sec: float):
+        """Use RL rate limiter if enabled, otherwise static delay"""
+        if self.rate_limiter:
+            self.rate_limiter.smart_delay()
+        else:
+            smart_delay(min_sec, max_sec)
     
     # ==================== HELPERS ====================
     

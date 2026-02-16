@@ -7,6 +7,7 @@ tiktok_*.json
 instagram_cookies.json
 instagram_*.json
 instagram_doc_ids.json
+instagram_rl_policy.json
 ig_browser_*.html
 .venv/
 .env
