@@ -4,6 +4,10 @@ debug_*.html
 debug_*.png
 tiktok_cookies.json
 tiktok_*.json
+instagram_cookies.json
+instagram_*.json
+instagram_doc_ids.json
+ig_browser_*.html
 .venv/
 .env
 .git/

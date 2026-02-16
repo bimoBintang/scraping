@@ -1,6 +1,6 @@
-# TikTok Advanced Scraper v5.1
+# Social Media Scraping Platform v5.2
 
-🚀 **Enterprise-grade TikTok scraping platform** dengan AI/ML integration, advanced stealth, dan distributed processing.
+🚀 **Enterprise-grade scraping platform** untuk **TikTok**, **Instagram**, & **Shopee** dengan AI/ML integration, advanced stealth, dan distributed processing.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Playwright](https://img.shields.io/badge/playwright-latest-green.svg)](https://playwright.dev/)
@@ -8,21 +8,30 @@
 
 ---
 
-## ✨ What's New in v5.1
+## ✨ What's New in v5.2
 
+- � **Instagram Scraper** (**NEW!**) - Hybrid API + Browser + Mobile API with 4 advanced algorithms
+- 🔄 **Hybrid Tri-Layer Fallback** - Auto-switch Web API → Browser → Mobile API
+- � **GraphQL doc_id Auto-Discovery** - No manual maintenance needed
+- 📄 **Multi-Fallback HTML Parsing** - 4-strategy parser with snapshot-on-failure
+- � **Location-Based User Clustering** - DBSCAN + Haversine distance
 - 📡 **Real-Time Monitoring** - WebSocket streaming, Telegram alerts, dashboard
-- 🔐 **Enhanced Webhook Security** - SSRF protection, replay prevention, rate limiting
-- 📊 **Advanced Algorithms** - EMA, Z-score anomaly detection, Token Bucket
 - 🤖 **AI/ML Integration** - 11 modules dengan 51+ classes untuk content analysis
 - 🥷 **Advanced Stealth** - Browser fingerprint spoofing, human behavior simulation
-- 🔄 **Session Isolation** - Complete identity rotation dan context management
-- 📊 **Monitoring System** - Real-time metrics, alerts, dan dashboards
 
 ---
 
 ## 🎯 Features
 
-### Core Scraping
+### Platform Support
+
+| Platform      | Package       | Capabilities                                              |
+| ------------- | ------------- | --------------------------------------------------------- |
+| 📹 **TikTok** | `tiktok/`     | Profile, social network, 7 graph algorithms, AI/ML, stealth |
+| � **Instagram** | `instagram/` | Hybrid API, GraphQL auto-discovery, location clustering   |
+| 🛍️ **Shopee** | `shopee/`     | Price tracking, wishlist, API client, browser scraping     |
+
+### Core Scraping (TikTok)
 
 | Feature             | Description                                           |
 | ------------------- | ----------------------------------------------------- |
@@ -30,6 +39,28 @@
 | 👥 Social Network   | Following/followers list extraction                   |
 | 🍪 Cookie Injection | Authenticated session support                         |
 | 📡 API Interception | Capture internal TikTok API responses                 |
+
+### 📸 Instagram Scraper (NEW!)
+
+```
+instagram/
+├── hybrid_client.py    # Algo 1: Tri-layer API fallback
+├── discovery.py        # Algo 2: GraphQL doc_id auto-discovery
+├── parsers.py          # Algo 3: 4-strategy HTML parsing
+├── location_cluster.py # Algo 4: DBSCAN user clustering
+├── browser.py          # Playwright scraper (Layer 2)
+├── models.py           # Profile, Post, Story, Location
+├── exporter.py         # CSV/JSON/Excel export
+├── selectors.py        # CSS/DOM selectors
+└── utils.py            # Cookies, headers, helpers
+```
+
+| Algorithm                        | Description                                                |
+| -------------------------------- | ---------------------------------------------------------- |
+| 🔄 **Hybrid Tri-Layer Fallback** | Web API → Browser → Mobile API, auto-switch + exp backoff  |
+| 🔍 **doc_id Auto-Discovery**     | Parse JS bundles for GraphQL doc_ids, cache 7-day TTL      |
+| 📄 **Multi-Fallback Parsing**    | SharedData → additionalData → `__require` → regex          |
+| 📍 **Location Clustering**       | DBSCAN + Haversine + reverse geocoding (25 cities)         |
 
 ### Graph Algorithms
 
@@ -132,7 +163,7 @@ tiktok/social_analysis/
 ### Basic
 
 ```bash
-pip install playwright
+pip install playwright requests
 playwright install chromium
 ```
 
@@ -142,11 +173,17 @@ playwright install chromium
 pip install numpy scikit-learn torch transformers ultralytics opencv-python easyocr
 ```
 
+### Optional (Instagram)
+
+```bash
+pip install openpyxl  # Excel export
+```
+
 ---
 
 ## 📖 Usage
 
-### Basic Scraping
+### TikTok — Basic Scraping
 
 ```bash
 # Profile only
@@ -156,7 +193,7 @@ python main.py username
 python main.py username --save
 ```
 
-### Social Network
+### TikTok — Social Network
 
 ```bash
 # Following/Followers (requires cookies)
@@ -164,7 +201,7 @@ python main.py username --followers --cookies cookies.json
 python main.py username --following --cookies cookies.json
 ```
 
-### Graph Algorithms
+### TikTok — Graph Algorithms
 
 ```bash
 # BFS/DFS crawling
@@ -185,6 +222,79 @@ python main.py username --influence --max 100 --cookies cookies.json
 
 # Community detection
 python main.py username --community --max 100 --cookies cookies.json
+```
+
+### 📸 Instagram — CLI
+
+```bash
+# Profile scraping
+python instagram_main.py cristiano --save
+
+# Multiple profiles + compare
+python instagram_main.py cristiano leomessi neymarjr --compare
+
+# Posts scraping
+python instagram_main.py cristiano --posts --count 50
+
+# Followers/Following (requires cookies)
+python instagram_main.py cristiano --followers --cookies cookies.json
+python instagram_main.py cristiano --following --cookies cookies.json
+
+# Search users
+python instagram_main.py --search "photography"
+
+# Location-based clustering
+python instagram_main.py user1 user2 user3 --cluster-location
+
+# Discover GraphQL doc_ids
+python instagram_main.py --discover-doc-ids
+
+# Force specific layer
+python instagram_main.py cristiano --layer browser
+
+# Export
+python instagram_main.py cristiano --posts --export csv
+python instagram_main.py cristiano --export excel
+```
+
+### 📸 Instagram — Python API
+
+```python
+from instagram import (
+    HybridInstagramClient,
+    LocationClusterAnalyzer,
+    DocIdDiscovery,
+    InstagramExporter,
+)
+
+# Profile scraping (auto tri-layer fallback)
+client = HybridInstagramClient()
+profile = client.get_profile("cristiano")
+print(profile)  # Formatted output
+
+# Posts
+posts = client.get_posts("cristiano", count=50)
+
+# With cookies for authenticated features
+client = HybridInstagramClient(cookies_file="cookies.json")
+followers = client.get_followers("cristiano", count=100)
+
+# Location clustering
+analyzer = LocationClusterAnalyzer(eps_km=50)
+for user in ["user1", "user2", "user3"]:
+    posts = client.get_posts(user, count=50)
+    prediction = analyzer.predict_location(user, posts)
+    print(f"@{user}: {prediction['predicted_city']}, {prediction['predicted_country']}")
+
+# Auto-discover GraphQL doc_ids
+discovery = DocIdDiscovery()
+doc_ids = discovery.discover_all()
+print(doc_ids)  # {"user_posts": "123...", "user_followers": "456...", ...}
+
+# Export
+exporter = InstagramExporter(output_dir="output")
+exporter.profiles_to_csv(profiles)
+exporter.posts_to_json(posts, username="cristiano")
 ```
 
 ### AI Analysis
@@ -354,64 +464,63 @@ python main.py username --delay stealth
 
 ## 🍪 Cookie Setup
 
+### TikTok
 1. Install browser extension "Cookie-Editor"
 2. Login to TikTok
-3. Export cookies as JSON
-4. Save as `cookies.json`
+3. Export cookies as JSON → Save as `cookies.json`
+
+### Instagram
+1. Install browser extension "Cookie-Editor" / "EditThisCookie"
+2. Login to Instagram
+3. Export cookies as JSON → Save as `instagram_cookies.json`
+4. Use: `python instagram_main.py username --cookies instagram_cookies.json`
 
 ---
 
 ## 📁 Project Structure
 
 ```
-
-tiktok/
-├── **init**.py # Package exports (v4.2.0)
-├── models.py # TikTokProfile dataclass
-├── browser.py # Playwright browser manager
-├── scraper.py # Core scraping logic
-├── algorithms.py # Graph algorithms
-├── export.py # Multi-format export
-├── rotation.py # UA/Proxy rotation + chains
-├── delays.py # Smart delays with jitter
-├── parsers.py # HTML/JSON parsers
-├── sniffer.py # API interception
+├── main.py                 # TikTok CLI entry point
+├── tiktok_playwright.py    # TikTok browser scraper
+├── tiktok_scraper.py       # TikTok lightweight scraper
+├── instagram_main.py       # Instagram CLI entry point (NEW)
+├── instagram_playwright.py # Instagram browser scraper (NEW)
+├── shopee_main.py          # Shopee CLI entry point
 │
-├── # Stealth Modules (v4.2.0)
-├── fingerprint.py # Browser fingerprint spoofing
-├── human_behavior.py # Human-like behavior simulation
-├── isolation.py # Session isolation & rotation
+├── tiktok/                 # TikTok Package (v4.2.0)
+│   ├── models.py           # TikTokProfile dataclass
+│   ├── browser.py          # Playwright browser manager
+│   ├── scraper.py          # Core scraping logic
+│   ├── algorithms.py       # 7 graph algorithms
+│   ├── export.py           # Multi-format export
+│   ├── fingerprint.py      # Browser fingerprint spoofing
+│   ├── human_behavior.py   # Human-like behavior
+│   ├── isolation.py        # Session isolation
+│   ├── ai/                 # AI/ML (11 modules, 51+ classes)
+│   ├── monitoring/         # Real-time monitoring
+│   └── social_analysis/    # Network analysis
 │
-├── # Utility Modules (v4.1.0)
-├── selectors.py # Centralized CSS selectors
-├── async_utils.py # Async utilities & retry logic
+├── instagram/              # Instagram Package v1.0 (NEW)
+│   ├── hybrid_client.py    # Algo 1: Tri-layer fallback
+│   ├── discovery.py        # Algo 2: doc_id auto-discovery
+│   ├── parsers.py          # Algo 3: 4-strategy parsing
+│   ├── location_cluster.py # Algo 4: DBSCAN clustering
+│   ├── browser.py          # Playwright scraper
+│   ├── models.py           # Profile, Post, Story, Location
+│   ├── exporter.py         # CSV/JSON/Excel export
+│   ├── selectors.py        # CSS/DOM selectors
+│   └── utils.py            # Cookies, headers, helpers
 │
-└── ai/ # AI/ML Package (v5.0)
-├── **init**.py # 51 class exports
-├── preprocessing.py # Data pipeline
-├── resilience.py # Fault tolerance
-├── nlp.py # NLP analysis
-├── anomaly.py # Bot/spam detection
-├── vision.py # Computer vision
-├── virality.py # Viral prediction
-├── orchestrator.py # Workflow engine
-├── monitoring.py # Metrics & alerts
-├── fusion.py # Multimodal fusion
-├── explainability.py # XAI features
-└── model_registry.py # Model versioning
-│
-└── monitoring/ # Real-Time Monitoring (v5.1)
-├── **init**.py # Package exports
-├── events.py # EventEmitter + LRU cache
-├── metrics.py # EMA, time windows
-├── anomaly.py # Z-score detection
-├── rate_limiter.py # Token Bucket
-├── websocket_server.py # Delta encoding
-├── webhooks.py # HMAC + SSRF protection
-├── notifications/ # Telegram + Circuit Breaker
-└── dashboard/ # FastAPI + Chart.js
-
+└── shopee/                 # Shopee Package (v1.0)
+    ├── api_client.py       # HTTP API client
+    ├── browser.py          # Browser scraper
+    ├── price_tracker.py    # Price monitoring
+    ├── wishlist.py         # Wishlist management
+    ├── models.py           # Product data models
+    └── exporter.py         # Export utilities
 ```
+
+---
 
 ---
 
@@ -442,14 +551,15 @@ tiktok/
 
 ## 📊 Version History
 
-| Version | Release | Highlights                                                      |
-| ------- | ------- | --------------------------------------------------------------- |
-| v5.1    | 2026-02 | Real-Time Monitoring (WebSocket, Telegram, Dashboard, Webhooks) |
-| v5.0    | 2026-02 | AI/ML Integration (11 modules, 51+ classes)                     |
-| v4.2    | 2026-02 | Stealth identity protection                                     |
-| v4.1    | 2026-02 | Async utilities, centralized selectors                          |
-| v3.0    | 2026-01 | Graph algorithms, export formats                                |
-| v2.0    | 2025-12 | Social network scraping                                         |
+| Version | Release | Highlights                                                              |
+| ------- | ------- | ----------------------------------------------------------------------- |
+| v5.2    | 2026-02 | **Instagram Scraper** (Hybrid API, doc_id discovery, location cluster) |
+| v5.1    | 2026-02 | Real-Time Monitoring (WebSocket, Telegram, Dashboard, Webhooks)         |
+| v5.0    | 2026-02 | AI/ML Integration (11 modules, 51+ classes)                             |
+| v4.2    | 2026-02 | Stealth identity protection                                             |
+| v4.1    | 2026-02 | Async utilities, centralized selectors                                  |
+| v3.0    | 2026-01 | Graph algorithms, export formats                                        |
+| v2.0    | 2025-12 | Social network scraping                                                 |
 
 ---
 
@@ -461,8 +571,4 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## ⚠️ Disclaimer
 
-This tool is for educational and research purposes only. Always respect TikTok's Terms of Service and rate limits. The developers are not responsible for any misuse of this software.
-
-```
-
-```
+This tool is for educational and research purposes only. Always respect each platform's Terms of Service and rate limits. The developers are not responsible for any misuse of this software.
