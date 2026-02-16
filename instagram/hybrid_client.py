@@ -22,6 +22,7 @@ from .parsers import InstagramParser
 from .discovery import DocIdDiscovery
 from .rate_limiter import AdaptiveRateLimiter
 from .account_router import AccountRouter
+from .predictive_crawler import PatternAnalyzer, CrawlScheduler
 from .utils import (
     generate_web_headers,
     generate_mobile_headers,
@@ -135,6 +136,12 @@ class HybridInstagramClient:
             self.router = AccountRouter(accounts_dir)
         else:
             self.router = None
+        
+        # Algorithm 7: Predictive Crawling (Posting Pattern)
+        self.pattern_analyzer = PatternAnalyzer()
+        self.crawler_scheduler = CrawlScheduler(
+            cache_file=str(Path(debug_dir) / "instagram_patterns.json"),
+        )
         
         # Layer health tracking
         self.layers: Dict[str, LayerHealth] = {
@@ -257,7 +264,45 @@ class HybridInstagramClient:
             self._adaptive_delay(1.5, 3)
         
         print(f"  [✓] Fetched {len(posts)} posts")
-        return posts[:count]
+        
+        # Algorithm 7: Analyze posting pattern
+        fetched = posts[:count]
+        if len(fetched) >= 5:
+            pattern = self.pattern_analyzer.analyze(fetched, username)
+            self.crawler_scheduler.save_pattern(pattern)
+            print(f"  [📊] Pattern: {pattern.user_type} (regularity={pattern.regularity_score:.0%}), "
+                  f"peak={pattern.peak_hour:02d}:00")
+        
+        return fetched
+    
+    def should_crawl(self, username: str) -> bool:
+        """
+        Check if now is a good time to crawl this user based on posting patterns.
+        
+        Args:
+            username: Instagram username
+            
+        Returns:
+            True if now is within a hot posting window
+        """
+        pattern = self.crawler_scheduler.get_cached_pattern(username)
+        if not pattern:
+            return True  # No pattern data — always crawl
+        return self.crawler_scheduler.should_crawl_now(pattern)
+    
+    def analyze_pattern(self, username: str, post_count: int = 50):
+        """
+        Fetch posts and analyze posting pattern.
+        
+        Returns:
+            PostingPattern or None
+        """
+        posts = self.get_posts(username, count=post_count)
+        if len(posts) < 5:
+            return None
+        pattern = self.pattern_analyzer.analyze(posts, username)
+        self.crawler_scheduler.save_pattern(pattern)
+        return pattern
     
     def get_followers(self, username: str, count: int = 100) -> List[Dict]:
         """Get followers list (requires cookies)"""

@@ -35,7 +35,7 @@ from instagram import (
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Instagram Scraper v1.2 — Hybrid API + Browser + Mobile API + RL + Account Rotation",
+        description="Instagram Scraper v1.3 — Hybrid API + RL + Account Rotation + Predictive Crawling",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -60,6 +60,8 @@ Examples:
     parser.add_argument('--compare', action='store_true', help='Compare multiple profiles')
     parser.add_argument('--cluster-location', action='store_true', help='Location-based clustering')
     parser.add_argument('--discover-doc-ids', action='store_true', help='Discover GraphQL doc_ids')
+    parser.add_argument('--analyze-pattern', action='store_true', help='Analyze posting pattern for usernames')
+    parser.add_argument('--schedule', action='store_true', help='Show predicted crawl schedule')
     
     # Options
     parser.add_argument('--count', type=int, default=12, help='Number of items to fetch (default: 12)')
@@ -102,7 +104,7 @@ Examples:
     acct_label = f"🔄 {len(client.router.accounts) if client.router else 0} Accounts" if args.accounts_dir else "Single Account"
     print(f"""
 ╔══════════════════════════════════════════════════╗
-║     📸 Instagram Scraper v1.2                   ║
+║     📸 Instagram Scraper v1.3                   ║
 ║     Hybrid API + Browser + Mobile API           ║
 ║     {rl_label:<42} ║
 ║     {acct_label:<42} ║
@@ -153,6 +155,28 @@ Examples:
                 json.dump(results, f, indent=2, ensure_ascii=False)
             print(f"\n  [+] Results saved to instagram_search.json")
         
+        return
+    
+    # ==================== PATTERN ANALYSIS ====================
+    
+    if args.analyze_pattern and args.usernames:
+        for username in args.usernames:
+            username = username.lstrip('@').strip()
+            print(f"\n[*] Analyzing posting pattern for @{username}...")
+            pattern = client.analyze_pattern(username, post_count=args.count or 50)
+            
+            if pattern:
+                pattern.print_pattern()
+                
+                if args.schedule:
+                    client.crawler_scheduler.print_schedule(pattern, hours_ahead=24)
+                
+                if args.save or args.export:
+                    with open(Path(args.output) / f"instagram_{username}_pattern.json", 'w', encoding='utf-8') as f:
+                        json.dump(pattern.to_dict(), f, indent=2, ensure_ascii=False)
+                    print(f"  [+] Pattern saved to instagram_{username}_pattern.json")
+            else:
+                print(f"  [!] Not enough posts to analyze pattern for @{username}")
         return
     
     # ==================== PROFILE SCRAPING ====================
