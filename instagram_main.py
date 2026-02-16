@@ -35,7 +35,7 @@ from instagram import (
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Instagram Scraper v1.5 — Hybrid API + RL + Proxy + Account Rotation + Highlights",
+        description="Instagram Scraper v1.6 — Hybrid API + RL + Proxy + Highlights + Selenium/Playwright",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -79,6 +79,9 @@ Examples:
     parser.add_argument('--proxy-file', type=str, help='Path to proxy pool JSON file')
     parser.add_argument('--proxy-status', action='store_true', help='Show proxy pool status table')
     parser.add_argument('--test-proxies', action='store_true', help='Test all proxies latency')
+    parser.add_argument('--engine', choices=['auto', 'playwright', 'selenium'], default='auto',
+                        help='Browser engine preference (default: auto)')
+    parser.add_argument('--engine-status', action='store_true', help='Show browser engine status')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     
     args = parser.parse_args()
@@ -93,6 +96,7 @@ Examples:
         cookies_file=args.cookies,
         accounts_dir=args.accounts_dir,
         proxy_file=args.proxy_file,
+        engine=args.engine,
         debug_dir=args.output,
         enable_rl=not args.no_rl,
         rl_debug=args.rl_debug,
@@ -108,13 +112,15 @@ Examples:
     rl_label = "🧠 RL Rate Limiter" if not args.no_rl else "Static Delay"
     acct_label = f"🔄 {len(client.router.accounts) if client.router else 0} Accounts" if args.accounts_dir else "Single Account"
     proxy_label = f"🌐 {len(client.proxy_manager.proxies)} Proxies" if client.proxy_manager else "Direct Connection"
+    engine_label = f"🔀 Engine: {args.engine}"
     print(f"""
 ╔══════════════════════════════════════════════════╗
-║     📸 Instagram Scraper v1.5                   ║
+║     📸 Instagram Scraper v1.6                   ║
 ║     Hybrid API + Browser + Mobile API           ║
 ║     {rl_label:<42} ║
 ║     {acct_label:<42} ║
 ║     {proxy_label:<42} ║
+║     {engine_label:<42} ║
 ╚══════════════════════════════════════════════════╝
     """)
     
@@ -350,7 +356,16 @@ Examples:
         else:
             ps = stats.get('proxy_pool', {})
             print(f"    Proxies: {ps.get('active_proxies', 0)}/{ps.get('total_proxies', 0)} active, "
-                  f"avg latency: {ps.get('avg_latency_ms', 0):.0f}ms")    
+                  f"avg latency: {ps.get('avg_latency_ms', 0):.0f}ms")
+    
+    # Browser Engine stats
+    if args.engine_status:
+        client.hybrid_engine.print_engine_status()
+    else:
+        be = stats.get('browser_engine', {})
+        print(f"    Engine: {be.get('preference', 'auto')}, "
+              f"PW={'✓' if be.get('playwright_available') else '✗'}, "
+              f"SE={'✓' if be.get('selenium_available') else '✗'}")
     # Save RL policy
     if client.rate_limiter:
         client.rate_limiter.save_policy()

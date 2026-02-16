@@ -1,7 +1,8 @@
 """
-Instagram Scraper Package v1.5
+Instagram Scraper Package v1.6
 Advanced scraper with Hybrid API, GraphQL, multi-fallback, location clustering,
-RL rate limiting, account rotation, predictive crawling, proxy rotation, and story highlights.
+RL rate limiting, account rotation, predictive crawling, proxy rotation,
+story highlights, and Selenium/Playwright hybrid engine.
 """
 
 from .models import (
@@ -74,6 +75,12 @@ from .highlights_crawler import (
     HighlightItem,
 )
 
+from .browser_engine import (
+    HybridBrowserEngine,
+    PlaywrightEngine,
+    SeleniumEngine,
+)
+
 from .utils import (
     load_cookies,
     generate_web_headers,
@@ -82,7 +89,7 @@ from .utils import (
     smart_delay,
 )
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 __all__ = [
     # Models
     'InstagramProfile', 'InstagramPost', 'InstagramStory',
@@ -111,6 +118,8 @@ __all__ = [
     'ProxyManager', 'ProxyInfo',
     # Highlights
     'HighlightsCrawler', 'HighlightReel', 'HighlightItem',
+    # Browser Engine
+    'HybridBrowserEngine', 'PlaywrightEngine', 'SeleniumEngine',
     # Utils
     'load_cookies', 'generate_web_headers', 'smart_delay',
 ]

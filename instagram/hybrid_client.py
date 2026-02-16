@@ -25,6 +25,7 @@ from .account_router import AccountRouter
 from .predictive_crawler import PatternAnalyzer, CrawlScheduler
 from .proxy_rotator import ProxyManager
 from .highlights_crawler import HighlightsCrawler, HighlightReel
+from .browser_engine import HybridBrowserEngine, EngineType, Difficulty
 from .utils import (
     generate_web_headers,
     generate_mobile_headers,
@@ -110,6 +111,7 @@ class HybridInstagramClient:
         cookies_file: Optional[str] = None,
         accounts_dir: Optional[str] = None,
         proxy_file: Optional[str] = None,
+        engine: str = "auto",
         debug_dir: str = ".",
         enable_discovery: bool = True,
         enable_rl: bool = True,
@@ -151,6 +153,12 @@ class HybridInstagramClient:
             self.proxy_manager = ProxyManager(proxy_file)
         else:
             self.proxy_manager = None
+        
+        # Algorithm 10: Selenium Playwright Hybrid Engine
+        self.hybrid_engine = HybridBrowserEngine(
+            engine_preference=engine,
+            cookies=self.cookies,
+        )
         
         # Layer health tracking
         self.layers: Dict[str, LayerHealth] = {
@@ -407,6 +415,7 @@ class HybridInstagramClient:
             stats['account_router'] = self.router.get_stats()
         if self.proxy_manager:
             stats['proxy_pool'] = self.proxy_manager.get_stats()
+        stats['browser_engine'] = self.hybrid_engine.get_stats()
         return stats
     
     def _make_request(self, url: str, **kwargs) -> requests.Response:
