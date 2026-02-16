@@ -1,4 +1,4 @@
-# Social Media Scraping Platform v5.2
+# Social Media Scraping Platform v5.3
 
 🚀 **Enterprise-grade scraping platform** untuk **TikTok**, **Instagram**, & **Shopee** dengan AI/ML integration, advanced stealth, dan distributed processing.
 
@@ -8,16 +8,18 @@
 
 ---
 
-## ✨ What's New in v5.2
+## ✨ What's New in v5.3
 
-- � **Instagram Scraper** (**NEW!**) - Hybrid API + Browser + Mobile API with 4 advanced algorithms
-- 🔄 **Hybrid Tri-Layer Fallback** - Auto-switch Web API → Browser → Mobile API
-- � **GraphQL doc_id Auto-Discovery** - No manual maintenance needed
-- 📄 **Multi-Fallback HTML Parsing** - 4-strategy parser with snapshot-on-failure
-- � **Location-Based User Clustering** - DBSCAN + Haversine distance
-- 📡 **Real-Time Monitoring** - WebSocket streaming, Telegram alerts, dashboard
-- 🤖 **AI/ML Integration** - 11 modules dengan 51+ classes untuk content analysis
-- 🥷 **Advanced Stealth** - Browser fingerprint spoofing, human behavior simulation
+- 📸 **Instagram Scraper v1.6** — 10 algorithms, Hybrid API + Browser + Mobile API
+- 🧠 **Adaptive RL Rate Limiter** — Q-Learning based delay optimization
+- 🔄 **Account Rotation** — Consistent hashing, multi-cookie support
+- 📅 **Predictive Crawling** — FFT-based posting pattern analysis
+- 🌐 **Multi-Proxy Rotation** — Latency-based scoring, EMA, geo-routing
+- 📂 **Story Highlights Crawler** — 2-step tray→items API with GraphQL fallback
+- 🔀 **Selenium/Playwright Hybrid** — Auto engine selection + difficulty scoring
+- 📡 **Real-Time Monitoring** — WebSocket streaming, Telegram alerts, dashboard
+- 🤖 **AI/ML Integration** — 11 modules dengan 51+ classes untuk content analysis
+- 🥷 **Advanced Stealth** — Browser fingerprint spoofing, human behavior simulation
 
 ---
 
@@ -28,7 +30,7 @@
 | Platform      | Package       | Capabilities                                              |
 | ------------- | ------------- | --------------------------------------------------------- |
 | 📹 **TikTok** | `tiktok/`     | Profile, social network, 7 graph algorithms, AI/ML, stealth |
-| � **Instagram** | `instagram/` | Hybrid API, GraphQL auto-discovery, location clustering   |
+| 📸 **Instagram** | `instagram/` | 10 algorithms, Hybrid API, RL, proxy rotation, highlights |
 | 🛍️ **Shopee** | `shopee/`     | Price tracking, wishlist, API client, browser scraping     |
 
 ### Core Scraping (TikTok)
@@ -40,27 +42,39 @@
 | 🍪 Cookie Injection | Authenticated session support                         |
 | 📡 API Interception | Capture internal TikTok API responses                 |
 
-### 📸 Instagram Scraper (NEW!)
+### 📸 Instagram Scraper (v1.6)
 
 ```
 instagram/
-├── hybrid_client.py    # Algo 1: Tri-layer API fallback
-├── discovery.py        # Algo 2: GraphQL doc_id auto-discovery
-├── parsers.py          # Algo 3: 4-strategy HTML parsing
-├── location_cluster.py # Algo 4: DBSCAN user clustering
-├── browser.py          # Playwright scraper (Layer 2)
-├── models.py           # Profile, Post, Story, Location
-├── exporter.py         # CSV/JSON/Excel export
-├── selectors.py        # CSS/DOM selectors
-└── utils.py            # Cookies, headers, helpers
+├── hybrid_client.py      # Algo 1: Tri-layer API fallback
+├── discovery.py          # Algo 2: GraphQL doc_id auto-discovery
+├── parsers.py            # Algo 3: 4-strategy HTML parsing
+├── location_cluster.py   # Algo 4: DBSCAN user clustering
+├── rate_limiter.py       # Algo 5: Q-Learning adaptive rate limiter
+├── account_router.py     # Algo 6: Consistent hashing account rotation
+├── predictive_crawler.py # Algo 7: FFT posting pattern analysis
+├── proxy_rotator.py      # Algo 8: Multi-proxy latency-based rotation
+├── highlights_crawler.py # Algo 9: Story highlights tray→items crawler
+├── browser_engine.py     # Algo 10: Selenium/Playwright hybrid engine
+├── browser.py            # Playwright scraper (Layer 2)
+├── models.py             # Profile, Post, Story, Location
+├── exporter.py           # CSV/JSON/Excel export
+├── selectors.py          # CSS/DOM selectors
+└── utils.py              # Cookies, headers, helpers
 ```
 
-| Algorithm                        | Description                                                |
-| -------------------------------- | ---------------------------------------------------------- |
-| 🔄 **Hybrid Tri-Layer Fallback** | Web API → Browser → Mobile API, auto-switch + exp backoff  |
-| 🔍 **doc_id Auto-Discovery**     | Parse JS bundles for GraphQL doc_ids, cache 7-day TTL      |
-| 📄 **Multi-Fallback Parsing**    | SharedData → additionalData → `__require` → regex          |
-| 📍 **Location Clustering**       | DBSCAN + Haversine + reverse geocoding (25 cities)         |
+| #  | Algorithm                           | Description                                                |
+|----|-------------------------------------|------------------------------------------------------------|
+| 1  | 🔄 **Hybrid Tri-Layer Fallback**    | Web API → Browser → Mobile API, auto-switch + exp backoff  |
+| 2  | 🔍 **doc_id Auto-Discovery**        | Parse JS bundles for GraphQL doc_ids, cache 7-day TTL      |
+| 3  | 📄 **Multi-Fallback Parsing**       | SharedData → additionalData → `__require` → regex          |
+| 4  | 📍 **Location Clustering**          | DBSCAN + Haversine + reverse geocoding (25 cities)         |
+| 5  | 🧠 **Adaptive RL Rate Limiter**     | Q-Learning, 5 states × 4 actions, epsilon-greedy           |
+| 6  | 🔄 **Account Rotation**             | Consistent hashing ring, health-aware failover             |
+| 7  | 📅 **Predictive Crawling**          | FFT posting pattern, optimal crawl scheduling              |
+| 8  | 🌐 **Multi-Proxy Rotation**         | Composite scoring, EMA latency, geo-routing, auto-ban      |
+| 9  | 📂 **Story Highlights Crawler**     | 2-step tray→items, Mobile API + GraphQL fallback           |
+| 10 | 🔀 **Selenium/Playwright Hybrid**   | Difficulty scoring, auto engine selection, fallback         |
 
 ### Graph Algorithms
 
@@ -176,7 +190,9 @@ pip install numpy scikit-learn torch transformers ultralytics opencv-python easy
 ### Optional (Instagram)
 
 ```bash
-pip install openpyxl  # Excel export
+pip install openpyxl                  # Excel export
+pip install selenium                  # Selenium engine
+pip install undetected-chromedriver    # Stealth Selenium (recommended)
 ```
 
 ---
@@ -255,6 +271,32 @@ python instagram_main.py cristiano --layer browser
 # Export
 python instagram_main.py cristiano --posts --export csv
 python instagram_main.py cristiano --export excel
+
+# RL Rate Limiter
+python instagram_main.py cristiano --rl-stats       # Show Q-table stats
+python instagram_main.py cristiano --no-rl           # Disable RL
+
+# Account Rotation
+python instagram_main.py cristiano --accounts-dir ./accounts
+python instagram_main.py cristiano --ring-status     # Show hash ring
+
+# Predictive Crawling
+python instagram_main.py cristiano --analyze-pattern --count 50
+python instagram_main.py cristiano --analyze-pattern --schedule
+
+# Proxy Rotation
+python instagram_main.py cristiano --proxy-file proxies.json
+python instagram_main.py cristiano --proxy-status    # Show pool status
+python instagram_main.py cristiano --test-proxies    # Latency test all
+
+# Story Highlights
+python instagram_main.py cristiano --highlights --cookies cookies.json
+python instagram_main.py cristiano --highlights --save
+
+# Selenium/Playwright Engine
+python instagram_main.py cristiano --engine auto        # default
+python instagram_main.py cristiano --engine selenium    # force stealth
+python instagram_main.py cristiano --engine-status      # show engine health
 ```
 
 ### 📸 Instagram — Python API
@@ -265,6 +307,7 @@ from instagram import (
     LocationClusterAnalyzer,
     DocIdDiscovery,
     InstagramExporter,
+    HybridBrowserEngine,
 )
 
 # Profile scraping (auto tri-layer fallback)
@@ -279,12 +322,23 @@ posts = client.get_posts("cristiano", count=50)
 client = HybridInstagramClient(cookies_file="cookies.json")
 followers = client.get_followers("cristiano", count=100)
 
+# Story Highlights
+highlights = client.get_highlights("cristiano")
+
 # Location clustering
 analyzer = LocationClusterAnalyzer(eps_km=50)
 for user in ["user1", "user2", "user3"]:
     posts = client.get_posts(user, count=50)
     prediction = analyzer.predict_location(user, posts)
     print(f"@{user}: {prediction['predicted_city']}, {prediction['predicted_country']}")
+
+# Full-featured client
+client = HybridInstagramClient(
+    cookies_file="cookies.json",
+    accounts_dir="./accounts",    # Multi-account rotation
+    proxy_file="proxies.json",    # Proxy pool
+    engine="auto",                # auto/playwright/selenium
+)
 
 # Auto-discover GraphQL doc_ids
 discovery = DocIdDiscovery()
@@ -500,16 +554,22 @@ python main.py username --delay stealth
 │   ├── monitoring/         # Real-time monitoring
 │   └── social_analysis/    # Network analysis
 │
-├── instagram/              # Instagram Package v1.0 (NEW)
-│   ├── hybrid_client.py    # Algo 1: Tri-layer fallback
-│   ├── discovery.py        # Algo 2: doc_id auto-discovery
-│   ├── parsers.py          # Algo 3: 4-strategy parsing
-│   ├── location_cluster.py # Algo 4: DBSCAN clustering
-│   ├── browser.py          # Playwright scraper
-│   ├── models.py           # Profile, Post, Story, Location
-│   ├── exporter.py         # CSV/JSON/Excel export
-│   ├── selectors.py        # CSS/DOM selectors
-│   └── utils.py            # Cookies, headers, helpers
+├── instagram/                # Instagram Package v1.6
+│   ├── hybrid_client.py      # Algo 1: Tri-layer fallback
+│   ├── discovery.py          # Algo 2: doc_id auto-discovery
+│   ├── parsers.py            # Algo 3: 4-strategy parsing
+│   ├── location_cluster.py   # Algo 4: DBSCAN clustering
+│   ├── rate_limiter.py       # Algo 5: RL rate limiter
+│   ├── account_router.py     # Algo 6: Account rotation
+│   ├── predictive_crawler.py # Algo 7: Predictive crawling
+│   ├── proxy_rotator.py      # Algo 8: Proxy rotation
+│   ├── highlights_crawler.py # Algo 9: Story highlights
+│   ├── browser_engine.py     # Algo 10: Hybrid browser engine
+│   ├── browser.py            # Playwright scraper
+│   ├── models.py             # Profile, Post, Story, Location
+│   ├── exporter.py           # CSV/JSON/Excel export
+│   ├── selectors.py          # CSS/DOM selectors
+│   └── utils.py              # Cookies, headers, helpers
 │
 └── shopee/                 # Shopee Package (v1.0)
     ├── api_client.py       # HTTP API client
@@ -541,6 +601,8 @@ python main.py username --delay stealth
 | `opencv-python`       | Video processing            |
 | `easyocr`             | Text extraction from images |
 | `scikit-learn`        | ML algorithms               |
+| `selenium`            | Browser automation (engine) |
+| `undetected-chromedriver` | Stealth Selenium        |
 | `websockets`          | Real-time streaming         |
 | `fastapi`             | Dashboard backend           |
 | `uvicorn`             | ASGI server                 |
@@ -553,6 +615,7 @@ python main.py username --delay stealth
 
 | Version | Release | Highlights                                                              |
 | ------- | ------- | ----------------------------------------------------------------------- |
+| v5.3    | 2026-02 | **Instagram v1.6** (10 algorithms, highlights, hybrid engine)          |
 | v5.2    | 2026-02 | **Instagram Scraper** (Hybrid API, doc_id discovery, location cluster) |
 | v5.1    | 2026-02 | Real-Time Monitoring (WebSocket, Telegram, Dashboard, Webhooks)         |
 | v5.0    | 2026-02 | AI/ML Integration (11 modules, 51+ classes)                             |
