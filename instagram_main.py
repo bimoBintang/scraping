@@ -35,7 +35,7 @@ from instagram import (
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Instagram Scraper v1.3 — Hybrid API + RL + Account Rotation + Predictive Crawling",
+        description="Instagram Scraper v1.4 — Hybrid API + RL + Account Rotation + Predictive Crawling + Proxy Rotation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -75,6 +75,9 @@ Examples:
     parser.add_argument('--rl-debug', action='store_true', help='Enable RL debug output')
     parser.add_argument('--accounts-dir', type=str, help='Directory with cookie files for multi-account rotation')
     parser.add_argument('--ring-status', action='store_true', help='Show account rotation ring status')
+    parser.add_argument('--proxy-file', type=str, help='Path to proxy pool JSON file')
+    parser.add_argument('--proxy-status', action='store_true', help='Show proxy pool status table')
+    parser.add_argument('--test-proxies', action='store_true', help='Test all proxies latency')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     
     args = parser.parse_args()
@@ -88,6 +91,7 @@ Examples:
     client = HybridInstagramClient(
         cookies_file=args.cookies,
         accounts_dir=args.accounts_dir,
+        proxy_file=args.proxy_file,
         debug_dir=args.output,
         enable_rl=not args.no_rl,
         rl_debug=args.rl_debug,
@@ -102,14 +106,23 @@ Examples:
     
     rl_label = "🧠 RL Rate Limiter" if not args.no_rl else "Static Delay"
     acct_label = f"🔄 {len(client.router.accounts) if client.router else 0} Accounts" if args.accounts_dir else "Single Account"
+    proxy_label = f"🌐 {len(client.proxy_manager.proxies)} Proxies" if client.proxy_manager else "Direct Connection"
     print(f"""
 ╔══════════════════════════════════════════════════╗
-║     📸 Instagram Scraper v1.3                   ║
+║     📸 Instagram Scraper v1.4                   ║
 ║     Hybrid API + Browser + Mobile API           ║
 ║     {rl_label:<42} ║
 ║     {acct_label:<42} ║
+║     {proxy_label:<42} ║
 ╚══════════════════════════════════════════════════╝
     """)
+    
+    # ==================== TEST PROXIES ====================
+    
+    if args.test_proxies and client.proxy_manager:
+        client.proxy_manager.test_all_proxies()
+        client.proxy_manager.print_pool_status()
+        return
     
     # ==================== DOC_ID DISCOVERY ====================
     
@@ -314,6 +327,14 @@ Examples:
             print(f"    Accounts: {rs.get('active_accounts', 0)}/{rs.get('total_accounts', 0)} active, "
                   f"rerouted: {rs.get('total_rerouted', 0)}")
     
+    # Proxy pool stats
+    if client.proxy_manager:
+        if args.proxy_status:
+            client.proxy_manager.print_pool_status()
+        else:
+            ps = stats.get('proxy_pool', {})
+            print(f"    Proxies: {ps.get('active_proxies', 0)}/{ps.get('total_proxies', 0)} active, "
+                  f"avg latency: {ps.get('avg_latency_ms', 0):.0f}ms")    
     # Save RL policy
     if client.rate_limiter:
         client.rate_limiter.save_policy()

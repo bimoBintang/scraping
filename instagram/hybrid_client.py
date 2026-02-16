@@ -23,6 +23,7 @@ from .discovery import DocIdDiscovery
 from .rate_limiter import AdaptiveRateLimiter
 from .account_router import AccountRouter
 from .predictive_crawler import PatternAnalyzer, CrawlScheduler
+from .proxy_rotator import ProxyManager
 from .utils import (
     generate_web_headers,
     generate_mobile_headers,
@@ -107,6 +108,7 @@ class HybridInstagramClient:
         self,
         cookies_file: Optional[str] = None,
         accounts_dir: Optional[str] = None,
+        proxy_file: Optional[str] = None,
         debug_dir: str = ".",
         enable_discovery: bool = True,
         enable_rl: bool = True,
@@ -142,6 +144,12 @@ class HybridInstagramClient:
         self.crawler_scheduler = CrawlScheduler(
             cache_file=str(Path(debug_dir) / "instagram_patterns.json"),
         )
+        
+        # Algorithm 8: Multi-Proxy Rotation (Latency-Based)
+        if proxy_file:
+            self.proxy_manager = ProxyManager(proxy_file)
+        else:
+            self.proxy_manager = None
         
         # Layer health tracking
         self.layers: Dict[str, LayerHealth] = {
@@ -318,7 +326,7 @@ class HybridInstagramClient:
         
         try:
             headers = generate_web_headers(self.cookies)
-            response = self.session.get(
+            response = self._make_request(
                 "https://www.instagram.com/web/search/topsearch/",
                 params={'query': query, 'context': 'blended'},
                 headers=headers,
@@ -363,7 +371,42 @@ class HybridInstagramClient:
             stats['rl_rate_limiter'] = self.rate_limiter.get_stats()
         if self.router:
             stats['account_router'] = self.router.get_stats()
+        if self.proxy_manager:
+            stats['proxy_pool'] = self.proxy_manager.get_stats()
         return stats
+    
+    def _make_request(self, url: str, **kwargs) -> requests.Response:
+        """
+        Make HTTP GET request with automatic proxy rotation.
+        
+        Selects best proxy, times the request, records result.
+        Falls back to direct connection if all proxies banned or no proxy pool.
+        """
+        if not self.proxy_manager:
+            return self.session.get(url, **kwargs)
+        
+        proxy = self.proxy_manager.get_best_proxy()
+        
+        if not proxy:
+            # All proxies banned — direct connection fallback
+            return self.session.get(url, **kwargs)
+        
+        # Inject proxy
+        kwargs['proxies'] = proxy.to_requests_dict()
+        
+        start_time = time.time()
+        try:
+            response = self.session.get(url, **kwargs)
+            latency_ms = (time.time() - start_time) * 1000
+            
+            success = response.status_code < 500
+            self.proxy_manager.record_result(proxy, success=success, latency_ms=latency_ms)
+            
+            return response
+        except Exception as e:
+            latency_ms = (time.time() - start_time) * 1000
+            self.proxy_manager.record_result(proxy, success=False, latency_ms=latency_ms)
+            raise
     
     # ==================== LAYER 1: WEB API ====================
     
@@ -373,7 +416,7 @@ class HybridInstagramClient:
         cookies = cookies_override if cookies_override is not None else self.cookies
         headers = generate_web_headers(cookies, referer=f"https://www.instagram.com/{username}/")
         
-        response = self.session.get(
+        response = self._make_request(
             url,
             params={'username': username},
             headers=headers,
@@ -423,7 +466,7 @@ class HybridInstagramClient:
             from .utils import cookies_to_header
             headers['Cookie'] = cookies_to_header(cookies)
         
-        response = self.session.get(
+        response = self._make_request(
             url,
             headers=headers,
             timeout=15,
@@ -467,7 +510,7 @@ class HybridInstagramClient:
         
         params = {'username': username} if not user_id else {}
         
-        response = self.session.get(
+        response = self._make_request(
             url,
             params=params,
             headers=headers,
@@ -526,7 +569,7 @@ class HybridInstagramClient:
         headers = generate_web_headers(self.cookies)
         
         try:
-            response = self.session.get(
+            response = self._make_request(
                 self.GRAPHQL_URL,
                 params={
                     'doc_id': doc_id,
@@ -556,7 +599,7 @@ class HybridInstagramClient:
             params['max_id'] = cursor
         
         try:
-            response = self.session.get(url, params=params, headers=headers, timeout=15)
+            response = self._make_request(url, params=params, headers=headers, timeout=15)
             if response.status_code == 200:
                 data = response.json()
                 items = data.get('items', [])
@@ -638,7 +681,7 @@ class HybridInstagramClient:
         headers = generate_web_headers(self.cookies)
         
         try:
-            response = self.session.get(
+            response = self._make_request(
                 self.GRAPHQL_URL,
                 params={'doc_id': doc_id, 'variables': json.dumps(variables)},
                 headers=headers,
@@ -664,7 +707,7 @@ class HybridInstagramClient:
             params['max_id'] = cursor
         
         try:
-            response = self.session.get(url, params=params, headers=headers, timeout=15)
+            response = self._make_request(url, params=params, headers=headers, timeout=15)
             if response.status_code == 200:
                 data = response.json()
                 users = []
@@ -701,7 +744,7 @@ class HybridInstagramClient:
         """Try to resolve username to user_id via search"""
         try:
             headers = generate_web_headers(self.cookies)
-            response = self.session.get(
+            response = self._make_request(
                 "https://www.instagram.com/web/search/topsearch/",
                 params={'query': username, 'context': 'user'},
                 headers=headers,
