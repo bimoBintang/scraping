@@ -21,6 +21,7 @@ from .models import InstagramProfile, InstagramPost
 from .parsers import InstagramParser
 from .discovery import DocIdDiscovery
 from .rate_limiter import AdaptiveRateLimiter
+from .account_router import AccountRouter
 from .utils import (
     generate_web_headers,
     generate_mobile_headers,
@@ -104,6 +105,7 @@ class HybridInstagramClient:
     def __init__(
         self,
         cookies_file: Optional[str] = None,
+        accounts_dir: Optional[str] = None,
         debug_dir: str = ".",
         enable_discovery: bool = True,
         enable_rl: bool = True,
@@ -127,6 +129,12 @@ class HybridInstagramClient:
             print("  [🧠] Adaptive Rate Limiter (Q-Learning) aktif")
         else:
             self.rate_limiter = None
+        
+        # Algorithm 6: Distributed Account Rotation (Consistent Hashing)
+        if accounts_dir:
+            self.router = AccountRouter(accounts_dir)
+        else:
+            self.router = None
         
         # Layer health tracking
         self.layers: Dict[str, LayerHealth] = {
@@ -157,6 +165,15 @@ class HybridInstagramClient:
         print(f"  Scraping profile: @{username}")
         print(f"{'='*50}")
         
+        # Account routing: get cookies for this target
+        routed_account = None
+        active_cookies = self.cookies
+        if self.router:
+            routed_account = self.router.get_account(username)
+            if routed_account:
+                active_cookies = routed_account.cookies
+                print(f"  [🔄] Routed to account: {routed_account.name}")
+        
         # Layer priority order
         layer_methods = [
             ("web_api", self._get_profile_web_api),
@@ -174,25 +191,31 @@ class HybridInstagramClient:
             print(f"  [→] Trying Layer: {layer_name}")
             
             try:
-                profile = method(username)
+                profile = method(username, cookies_override=active_cookies)
                 if profile:
                     health.mark_success()
                     self._stats['layer_usage'][layer_name] += 1
                     self._stats['total_requests'] += 1
                     if self.rate_limiter:
                         self.rate_limiter.record_result(success=True)
+                    if routed_account and self.router:
+                        self.router.report_success(routed_account.name)
                     print(f"  [✓] Success via {layer_name}")
                     return profile
                 else:
                     health.mark_failure()
                     if self.rate_limiter:
                         self.rate_limiter.record_result(success=False)
+                    if routed_account and self.router:
+                        self.router.report_failure(routed_account.name)
                     print(f"  [✗] Layer {layer_name}: no data returned")
             except Exception as e:
                 health.mark_failure()
                 is_429 = "429" in str(e) or "rate limit" in str(e).lower()
                 if self.rate_limiter:
                     self.rate_limiter.record_result(success=False, rate_limited=is_429)
+                if routed_account and self.router:
+                    self.router.report_failure(routed_account.name, rate_limited=is_429)
                 print(f"  [✗] Layer {layer_name} error: {e}")
             
             self._adaptive_delay(1, 2)
@@ -293,14 +316,17 @@ class HybridInstagramClient:
         }
         if self.rate_limiter:
             stats['rl_rate_limiter'] = self.rate_limiter.get_stats()
+        if self.router:
+            stats['account_router'] = self.router.get_stats()
         return stats
     
     # ==================== LAYER 1: WEB API ====================
     
-    def _get_profile_web_api(self, username: str) -> Optional[InstagramProfile]:
+    def _get_profile_web_api(self, username: str, cookies_override: Optional[list] = None) -> Optional[InstagramProfile]:
         """Layer 1: Fetch profile via Instagram Web API"""
         url = f"{self.WEB_API_BASE}/users/web_profile_info/"
-        headers = generate_web_headers(self.cookies, referer=f"https://www.instagram.com/{username}/")
+        cookies = cookies_override if cookies_override is not None else self.cookies
+        headers = generate_web_headers(cookies, referer=f"https://www.instagram.com/{username}/")
         
         response = self.session.get(
             url,
@@ -342,14 +368,15 @@ class HybridInstagramClient:
     
     # ==================== LAYER 2: BROWSER ====================
     
-    def _get_profile_browser(self, username: str) -> Optional[InstagramProfile]:
+    def _get_profile_browser(self, username: str, cookies_override: Optional[list] = None) -> Optional[InstagramProfile]:
         """Layer 2: Fetch profile via direct HTTP request + HTML parsing"""
         url = f"https://www.instagram.com/{username}/"
         headers = generate_browser_headers()
+        cookies = cookies_override if cookies_override is not None else self.cookies
         
-        if self.cookies:
+        if cookies:
             from .utils import cookies_to_header
-            headers['Cookie'] = cookies_to_header(self.cookies)
+            headers['Cookie'] = cookies_to_header(cookies)
         
         response = self.session.get(
             url,
@@ -378,7 +405,7 @@ class HybridInstagramClient:
     
     # ==================== LAYER 3: MOBILE API ====================
     
-    def _get_profile_mobile_api(self, username: str) -> Optional[InstagramProfile]:
+    def _get_profile_mobile_api(self, username: str, cookies_override: Optional[list] = None) -> Optional[InstagramProfile]:
         """Layer 3: Fetch profile via Mobile API endpoint"""
         # First get user_id via search
         user_id = self._resolve_user_id(username)
@@ -390,7 +417,8 @@ class HybridInstagramClient:
             # Fallback to username-based endpoint
             url = f"{self.MOBILE_API_BASE}/users/web_profile_info/"
         
-        headers = generate_mobile_headers(self.cookies)
+        cookies = cookies_override if cookies_override is not None else self.cookies
+        headers = generate_mobile_headers(cookies)
         
         params = {'username': username} if not user_id else {}
         

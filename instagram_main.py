@@ -29,12 +29,13 @@ from instagram import (
     LocationClusterAnalyzer,
     InstagramProfile,
     AdaptiveRateLimiter,
+    AccountRouter,
 )
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Instagram Scraper v1.1 — Hybrid API + Browser + Mobile API + RL Rate Limiter",
+        description="Instagram Scraper v1.2 — Hybrid API + Browser + Mobile API + RL + Account Rotation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -70,6 +71,8 @@ Examples:
     parser.add_argument('--no-rl', action='store_true', help='Disable RL rate limiter')
     parser.add_argument('--rl-stats', action='store_true', help='Show RL rate limiter training stats')
     parser.add_argument('--rl-debug', action='store_true', help='Enable RL debug output')
+    parser.add_argument('--accounts-dir', type=str, help='Directory with cookie files for multi-account rotation')
+    parser.add_argument('--ring-status', action='store_true', help='Show account rotation ring status')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     
     args = parser.parse_args()
@@ -82,6 +85,7 @@ Examples:
     # Initialize components
     client = HybridInstagramClient(
         cookies_file=args.cookies,
+        accounts_dir=args.accounts_dir,
         debug_dir=args.output,
         enable_rl=not args.no_rl,
         rl_debug=args.rl_debug,
@@ -95,11 +99,13 @@ Examples:
                 client.layers[name].status = __import__('instagram.hybrid_client', fromlist=['LayerStatus']).LayerStatus.DISABLED
     
     rl_label = "🧠 RL Rate Limiter" if not args.no_rl else "Static Delay"
+    acct_label = f"🔄 {len(client.router.accounts) if client.router else 0} Accounts" if args.accounts_dir else "Single Account"
     print(f"""
 ╔══════════════════════════════════════════════════╗
-║     📸 Instagram Scraper v1.1                   ║
+║     📸 Instagram Scraper v1.2                   ║
 ║     Hybrid API + Browser + Mobile API           ║
 ║     {rl_label:<42} ║
+║     {acct_label:<42} ║
 ╚══════════════════════════════════════════════════╝
     """)
     
@@ -274,6 +280,15 @@ Examples:
         rl = stats['rl_rate_limiter']
         print(f"    RL steps: {rl['total_steps']}, ε={rl['epsilon']:.4f}, "
               f"dominant: {rl['dominant_action']}")
+    
+    # Account Router stats
+    if client.router:
+        if args.ring_status:
+            client.router.print_ring_status()
+        else:
+            rs = stats.get('account_router', {})
+            print(f"    Accounts: {rs.get('active_accounts', 0)}/{rs.get('total_accounts', 0)} active, "
+                  f"rerouted: {rs.get('total_rerouted', 0)}")
     
     # Save RL policy
     if client.rate_limiter:

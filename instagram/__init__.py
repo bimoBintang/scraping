@@ -1,7 +1,7 @@
 """
-Instagram Scraper Package v1.1
+Instagram Scraper Package v1.2
 Advanced scraper with Hybrid API, GraphQL auto-discovery, multi-fallback parsing,
-location-based user clustering, and adaptive RL rate limiting.
+location-based user clustering, adaptive RL rate limiting, and distributed account rotation.
 """
 
 from .models import (
@@ -51,6 +51,12 @@ from .selectors import (
 
 from .rate_limiter import AdaptiveRateLimiter
 
+from .account_router import (
+    AccountRouter,
+    ConsistentHashRing,
+    AccountInfo,
+)
+
 from .utils import (
     load_cookies,
     generate_web_headers,
@@ -59,7 +65,7 @@ from .utils import (
     smart_delay,
 )
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __all__ = [
     # Models
     'InstagramProfile', 'InstagramPost', 'InstagramStory',
@@ -80,6 +86,8 @@ __all__ = [
     'SelectorHelper',
     # Rate Limiter
     'AdaptiveRateLimiter',
+    # Account Router
+    'AccountRouter', 'ConsistentHashRing', 'AccountInfo',
     # Utils
     'load_cookies', 'generate_web_headers', 'smart_delay',
 ]
