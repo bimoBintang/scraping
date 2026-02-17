@@ -1,8 +1,8 @@
-"""
-Instagram Scraper Package v1.6
+"""Instagram Scraper Package v1.7
 Advanced scraper with Hybrid API, GraphQL, multi-fallback, location clustering,
 RL rate limiting, account rotation, predictive crawling, proxy rotation,
-story highlights, and Selenium/Playwright hybrid engine.
+story highlights, Selenium/Playwright hybrid engine, and private account
+anomaly detection.
 """
 
 from .models import (
@@ -11,6 +11,9 @@ from .models import (
     InstagramStory,
     LocationPoint,
     UserCluster,
+    CommentData,
+    MentionEdge,
+    PrivateAccountReport,
 )
 
 from .hybrid_client import (
@@ -81,6 +84,24 @@ from .browser_engine import (
     SeleniumEngine,
 )
 
+from .anomaly_detector import (
+    CommentScraper,
+    MentionExtractor,
+    NetworkInferenceEngine,
+    PrivateAccountAnalyzer,
+)
+
+from .streaming_parser import (
+    StreamOrchestrator,
+    StreamingPostFetcher,
+    MemoryMonitor,
+    JsonlStreamWriter,
+    CsvStreamWriter,
+    SqliteStreamWriter,
+    MongoStreamWriter,
+    ChunkProcessor,
+)
+
 from .utils import (
     load_cookies,
     generate_web_headers,
@@ -89,7 +110,7 @@ from .utils import (
     smart_delay,
 )
 
-__version__ = "1.6.0"
+__version__ = "1.8.0"
 __all__ = [
     # Models
     'InstagramProfile', 'InstagramPost', 'InstagramStory',
@@ -120,6 +141,14 @@ __all__ = [
     'HighlightsCrawler', 'HighlightReel', 'HighlightItem',
     # Browser Engine
     'HybridBrowserEngine', 'PlaywrightEngine', 'SeleniumEngine',
+    # Anomaly Detection
+    'CommentScraper', 'MentionExtractor', 'NetworkInferenceEngine',
+    'PrivateAccountAnalyzer', 'PrivateAccountReport',
+    'CommentData', 'MentionEdge',
+    # Streaming Parser
+    'StreamOrchestrator', 'StreamingPostFetcher', 'MemoryMonitor',
+    'JsonlStreamWriter', 'CsvStreamWriter', 'SqliteStreamWriter', 'MongoStreamWriter',
+    'ChunkProcessor',
     # Utils
     'load_cookies', 'generate_web_headers', 'smart_delay',
 ]

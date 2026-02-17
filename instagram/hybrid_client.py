@@ -354,6 +354,72 @@ class HybridInstagramClient:
         
         return reels
     
+    def analyze_private_account(
+        self,
+        username: str,
+        seed_users: Optional[List[str]] = None,
+        depth: int = 2,
+    ):
+        """
+        Algorithm 11: Anomaly Detection for Private Account Patterns.
+        
+        Analyze a private account through indirect public interactions,
+        mention network, and comment analysis.
+        
+        Args:
+            username: Target private account
+            seed_users: Known connected public accounts (auto-discover if None)
+            depth: Network search depth (1=direct, 2=friends of friends)
+            
+        Returns:
+            PrivateAccountReport with inferred data
+        """
+        from .anomaly_detector import PrivateAccountAnalyzer
+        
+        analyzer = PrivateAccountAnalyzer(self)
+        return analyzer.analyze(username, seed_users=seed_users, depth=depth)
+    
+    def stream_posts(
+        self,
+        usernames: list,
+        count: int = 1000,
+        fmt: str = "jsonl",
+        output: str = ".",
+        chunk_size: int = 50,
+        filters: dict = None,
+        mongo_uri: str = "mongodb://localhost:27017",
+        mongo_db: str = "instascope",
+    ):
+        """
+        Algorithm 12: Memory-Efficient Streaming Parser.
+        
+        Stream posts chunk-by-chunk to file/database without holding
+        all data in memory. Supports JSONL, CSV, SQLite, MongoDB.
+        
+        Args:
+            usernames: List of Instagram usernames
+            count: Posts to fetch per user
+            fmt: Output format (jsonl, csv, sqlite, mongodb)
+            output: Output directory
+            chunk_size: Batch size per chunk
+            filters: Filter config (min_likes, has_location, etc.)
+            mongo_uri: MongoDB URI (for mongodb format)
+            mongo_db: MongoDB database name
+        """
+        from .streaming_parser import StreamOrchestrator
+        
+        orch = StreamOrchestrator(self)
+        return orch.run(
+            usernames=usernames,
+            count=count,
+            fmt=fmt,
+            output=output,
+            chunk_size=chunk_size,
+            filters=filters,
+            mongo_uri=mongo_uri,
+            mongo_db=mongo_db,
+        )
+    
     def get_followers(self, username: str, count: int = 100) -> List[Dict]:
         """Get followers list (requires cookies)"""
         return self._get_social_list(username, "followers", count)

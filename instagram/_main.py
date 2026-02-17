@@ -35,6 +35,27 @@ def add_arguments(parser):
     parser.add_argument('--analyze-pattern', action='store_true', help='Analyze posting pattern for usernames')
     parser.add_argument('--schedule', action='store_true', help='Show predicted crawl schedule')
     parser.add_argument('--highlights', action='store_true', help='Fetch story highlights')
+    parser.add_argument('--analyze-private', action='store_true',
+                        help='Analyze private account via indirect interactions (Algorithm 11)')
+    parser.add_argument('--depth', type=int, default=2,
+                        help='Network search depth for --analyze-private (default: 2)')
+    parser.add_argument('--seed-users', nargs='*',
+                        help='Known public accounts connected to target (for --analyze-private)')
+    parser.add_argument('--stream', action='store_true',
+                        help='Enable streaming mode — chunk-by-chunk to file/DB (Algorithm 12)')
+    parser.add_argument('--stream-format', choices=['jsonl', 'csv', 'sqlite', 'mongodb'],
+                        default='jsonl', help='Streaming output format (default: jsonl)')
+    parser.add_argument('--stream-output', type=str, default='.',
+                        help='Output path for streaming mode')
+    parser.add_argument('--mongo-uri', type=str, default='mongodb://localhost:27017',
+                        help='MongoDB connection URI (for --stream-format mongodb)')
+    parser.add_argument('--mongo-db', type=str, default='instascope',
+                        help='MongoDB database name (for --stream-format mongodb)')
+    parser.add_argument('--chunk-size', type=int, default=50,
+                        help='Batch size per chunk for streaming (default: 50)')
+    parser.add_argument('--filter-min-likes', type=int, help='Filter: minimum likes')
+    parser.add_argument('--filter-has-location', action='store_true',
+                        help='Filter: only posts with location data')
 
     # Options
     parser.add_argument('--count', type=int, default=12, help='Number of items to fetch (default: 12)')
@@ -61,7 +82,7 @@ def main(args):
     """Instagram scraper main entry point."""
     # Validate
     if not args.usernames and not args.search and not args.discover_doc_ids:
-        print("  [!] Specify usernames, --search, or --discover-doc-ids")
+        print("  [!] Specify usernames, --search, --discover-doc-ids, or --analyze-private")
         sys.exit(1)
 
     # Initialize components
@@ -165,6 +186,44 @@ def main(args):
                     print(f"  [+] Pattern saved to instagram_{username}_pattern.json")
             else:
                 print(f"  [!] Not enough posts to analyze pattern for @{username}")
+        return
+
+    # ==================== ANOMALY DETECTION (Algorithm 11) ====================
+
+    if args.analyze_private and args.usernames:
+        for username in args.usernames:
+            username = username.lstrip('@').strip()
+            report = client.analyze_private_account(
+                username,
+                seed_users=args.seed_users,
+                depth=args.depth,
+            )
+
+            if report and (args.save or args.export):
+                with open(Path(args.output) / f"instagram_{username}_anomaly_report.json", 'w', encoding='utf-8') as f:
+                    json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+                print(f"  [+] Report saved to instagram_{username}_anomaly_report.json")
+        return
+
+    # ==================== STREAMING MODE (Algorithm 12) ====================
+
+    if args.stream and args.usernames:
+        filters = {}
+        if args.filter_min_likes:
+            filters['min_likes'] = args.filter_min_likes
+        if args.filter_has_location:
+            filters['has_location'] = True
+
+        stats = client.stream_posts(
+            usernames=[u.lstrip('@').strip() for u in args.usernames],
+            count=args.count,
+            fmt=args.stream_format,
+            output=args.stream_output,
+            chunk_size=args.chunk_size,
+            filters=filters if filters else None,
+            mongo_uri=args.mongo_uri,
+            mongo_db=args.mongo_db,
+        )
         return
 
     # ==================== HIGHLIGHTS ====================
