@@ -13,3 +13,4 @@ ig_browser_*.html
 .venv/
 .env
 .git/
+shopee/shopeeCookies.json

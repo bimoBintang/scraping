@@ -230,6 +230,15 @@ class WishlistManager:
         conn.commit()
         conn.close()
     
+    def update_name(self, item_id: int, name: str):
+        """Update product name (e.g. replace placeholder with real name)"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE wishlist SET product_name = ? WHERE item_id = ?", (name, item_id))
+        conn.commit()
+        conn.close()
+        logger.info(f"[Wishlist] Updated name for {item_id}: {name[:50]}")
+    
     def list_all(self, active_only: bool = True) -> List[WishlistItem]:
         """Get all items in wishlist"""
         conn = sqlite3.connect(self.db_path)
