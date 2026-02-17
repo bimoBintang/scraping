@@ -106,14 +106,32 @@ class TikTokInjector:
         """Wait for TikTok to fully load"""
         print("[INJECTION] Waiting for TikTok to load...")
         
-        # Wait for main content
-        await self.page.wait_for_selector('main', timeout=10000)
+        # Try multiple selectors - TikTok's structure can vary
+        selectors = [
+            '[data-e2e="user-page"]',
+            '[data-e2e="user-avatar"]', 
+            'div[class*="DivUserContainer"]',
+            'div[class*="ProfileHeader"]',
+            'h1[data-e2e="user-title"]',
+            'h2[data-e2e="user-subtitle"]',
+            'main',
+            '#app'
+        ]
         
-        # Wait for user profile to load
-        await self.page.wait_for_selector('[data-e2e="user-page"]', timeout=10000)
+        for selector in selectors:
+            try:
+                await self.page.wait_for_selector(selector, timeout=5000)
+                print(f"[INJECTION] Page loaded (found: {selector})")
+                break
+            except:
+                continue
         
-        # Additional wait for JavaScript
-        await self.page.wait_for_load_state('networkidle')
+        # Wait for network to settle
+        try:
+            await self.page.wait_for_load_state('networkidle', timeout=10000)
+        except:
+            pass
+        
         await asyncio.sleep(2)
     
     async def _inject_state_manipulation(self) -> InjectionResult:

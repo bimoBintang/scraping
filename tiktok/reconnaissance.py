@@ -446,11 +446,16 @@ class TikTokReconnaissance:
         """Handle network requests"""
         url = request.url
         if any(keyword in url for keyword in ['follow', 'user', 'profile', 'relation']):
+            try:
+                post_data = request.post_data or ""
+            except:
+                post_data = "[binary data]"
+            
             event = EventFlow(
                 event_type="network_request",
                 source="browser",
                 target=url,
-                payload_pattern=request.post_data or ""
+                payload_pattern=post_data if isinstance(post_data, str) else "[binary data]"
             )
             self.event_flows.append(event)
     
