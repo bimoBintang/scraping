@@ -1,24 +1,10 @@
 #!/usr/bin/env python
 """
-Instagram Scraper - CLI Entry Point
-Advanced scraper dengan Hybrid API, GraphQL auto-discovery, multi-fallback parsing,
-location-based user clustering, dan adaptive RL rate limiting.
-
-Usage:
-    python instagram_main.py cristiano                      # Profile
-    python instagram_main.py cristiano --save               # Save to JSON
-    python instagram_main.py user1 user2 user3              # Multiple profiles
-    python instagram_main.py cristiano --posts --count 50   # Posts
-    python instagram_main.py cristiano --followers --cookies cookies.json  # Followers
-    python instagram_main.py --search "photography"         # Search
-    python instagram_main.py user1 user2 --cluster-location # Location clustering
-    python instagram_main.py cristiano --export csv         # Export format
-    python instagram_main.py cristiano --layer browser      # Force layer
-    python instagram_main.py --discover-doc-ids             # Discover GraphQL doc_ids
+Instagram Scraper — CLI subcommand
+Moved from instagram_main.py for unified CLI architecture.
 """
 
 import json
-import argparse
 import sys
 from pathlib import Path
 
@@ -33,25 +19,11 @@ from instagram import (
 )
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Instagram Scraper v1.6 — Hybrid API + RL + Proxy + Highlights + Selenium/Playwright",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s cristiano                        Profile info
-  %(prog)s cristiano --posts --count 50     Fetch 50 posts
-  %(prog)s cristiano --followers --cookies cookies.json
-  %(prog)s user1 user2 user3 --compare      Compare profiles
-  %(prog)s user1 user2 --cluster-location   Location clustering
-  %(prog)s --search "photography"           Search users
-  %(prog)s --discover-doc-ids               Refresh GraphQL doc_ids
-        """
-    )
-    
+def add_arguments(parser):
+    """Add Instagram-specific arguments to the subparser."""
     # Positional
     parser.add_argument('usernames', nargs='*', help='Instagram usernames to scrape')
-    
+
     # Actions
     parser.add_argument('--posts', action='store_true', help='Fetch posts')
     parser.add_argument('--followers', action='store_true', help='Fetch followers (requires cookies)')
@@ -63,7 +35,7 @@ Examples:
     parser.add_argument('--analyze-pattern', action='store_true', help='Analyze posting pattern for usernames')
     parser.add_argument('--schedule', action='store_true', help='Show predicted crawl schedule')
     parser.add_argument('--highlights', action='store_true', help='Fetch story highlights')
-    
+
     # Options
     parser.add_argument('--count', type=int, default=12, help='Number of items to fetch (default: 12)')
     parser.add_argument('--cookies', type=str, help='Path to cookies JSON file')
@@ -83,14 +55,15 @@ Examples:
                         help='Browser engine preference (default: auto)')
     parser.add_argument('--engine-status', action='store_true', help='Show browser engine status')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    
-    args = parser.parse_args()
-    
+
+
+def main(args):
+    """Instagram scraper main entry point."""
     # Validate
     if not args.usernames and not args.search and not args.discover_doc_ids:
-        parser.print_help()
+        print("  [!] Specify usernames, --search, or --discover-doc-ids")
         sys.exit(1)
-    
+
     # Initialize components
     client = HybridInstagramClient(
         cookies_file=args.cookies,
@@ -102,95 +75,90 @@ Examples:
         rl_debug=args.rl_debug,
     )
     exporter = InstagramExporter(output_dir=args.output)
-    
+
     # Force specific layer if requested
     if args.layer:
         for name in client.layers:
             if name != args.layer:
                 client.layers[name].status = __import__('instagram.hybrid_client', fromlist=['LayerStatus']).LayerStatus.DISABLED
-    
+
     rl_label = "🧠 RL Rate Limiter" if not args.no_rl else "Static Delay"
     acct_label = f"🔄 {len(client.router.accounts) if client.router else 0} Accounts" if args.accounts_dir else "Single Account"
     proxy_label = f"🌐 {len(client.proxy_manager.proxies)} Proxies" if client.proxy_manager else "Direct Connection"
     engine_label = f"🔀 Engine: {args.engine}"
-    print(f"""
-╔══════════════════════════════════════════════════╗
-║     📸 Instagram Scraper v1.6                   ║
-║     Hybrid API + Browser + Mobile API           ║
-║     {rl_label:<42} ║
-║     {acct_label:<42} ║
-║     {proxy_label:<42} ║
-║     {engine_label:<42} ║
-╚══════════════════════════════════════════════════╝
-    """)
-    
+    print(f"  {rl_label}")
+    print(f"  {acct_label}")
+    print(f"  {proxy_label}")
+    print(f"  {engine_label}")
+    print()
+
     # ==================== TEST PROXIES ====================
-    
+
     if args.test_proxies and client.proxy_manager:
         client.proxy_manager.test_all_proxies()
         client.proxy_manager.print_pool_status()
         return
-    
+
     # ==================== DOC_ID DISCOVERY ====================
-    
+
     if args.discover_doc_ids:
         print("[*] Discovering GraphQL doc_ids...")
         discovery = DocIdDiscovery()
         doc_ids = discovery.discover_all()
-        
+
         print("\n  Results:")
         for query_type, doc_id in doc_ids.items():
             print(f"    {query_type}: {doc_id}")
-        
+
         status = discovery.cache_status()
         print("\n  Cache Status:")
         for qt, info in status.items():
             age = f"{info['age_days']}d" if info['age_days'] is not None else "N/A"
             expired = "⚠ EXPIRED" if info['expired'] else "✓"
             print(f"    {qt}: {info['doc_id'] or 'not found'} ({age}) {expired}")
-        
+
         return
-    
+
     # ==================== SEARCH ====================
-    
+
     if args.search:
         results = client.search_users(args.search)
-        
+
         if not results:
             print("[!] No results found")
             return
-        
+
         print(f"\n  Search Results for '{args.search}':")
         print(f"  {'Username':<25} {'Full Name':<30} {'Followers':>12} {'V':>3}")
         print(f"  {'-'*75}")
-        
+
         for user in results:
             v = "✓" if user.get('is_verified') else " "
             fc = user.get('follower_count', 0)
             fc_str = f"{fc:,}" if fc else "N/A"
             print(f"  @{user['username']:<24} {user['full_name']:<30} {fc_str:>12} {v:>3}")
-        
+
         if args.export == 'json' or args.save:
             with open(Path(args.output) / "instagram_search.json", 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, ensure_ascii=False)
             print(f"\n  [+] Results saved to instagram_search.json")
-        
+
         return
-    
+
     # ==================== PATTERN ANALYSIS ====================
-    
+
     if args.analyze_pattern and args.usernames:
         for username in args.usernames:
             username = username.lstrip('@').strip()
             print(f"\n[*] Analyzing posting pattern for @{username}...")
             pattern = client.analyze_pattern(username, post_count=args.count or 50)
-            
+
             if pattern:
                 pattern.print_pattern()
-                
+
                 if args.schedule:
                     client.crawler_scheduler.print_schedule(pattern, hours_ahead=24)
-                
+
                 if args.save or args.export:
                     with open(Path(args.output) / f"instagram_{username}_pattern.json", 'w', encoding='utf-8') as f:
                         json.dump(pattern.to_dict(), f, indent=2, ensure_ascii=False)
@@ -198,14 +166,14 @@ Examples:
             else:
                 print(f"  [!] Not enough posts to analyze pattern for @{username}")
         return
-    
+
     # ==================== HIGHLIGHTS ====================
-    
+
     if args.highlights and args.usernames:
         for username in args.usernames:
             username = username.lstrip('@').strip()
             reels = client.get_highlights(username, fetch_items=True)
-            
+
             if reels and (args.save or args.export):
                 highlights_data = [r.to_dict() for r in reels]
                 with open(Path(args.output) / f"instagram_{username}_highlights.json", 'w', encoding='utf-8') as f:
@@ -213,29 +181,29 @@ Examples:
                 total_items = sum(len(r.items) for r in reels)
                 print(f"  [+] Saved {len(reels)} reels ({total_items} items) to instagram_{username}_highlights.json")
         return
-    
+
     # ==================== PROFILE SCRAPING ====================
-    
+
     profiles = []
     all_posts = []
-    
+
     for username in args.usernames:
         # Clean username
         username = username.lstrip('@').strip()
-        
+
         # Get profile
         profile = client.get_profile(username)
-        
+
         if profile:
             profiles.append(profile)
             print(profile)
-            
+
             # ==================== POSTS ====================
-            
+
             if args.posts:
                 posts = client.get_posts(username, count=args.count)
                 all_posts.extend(posts)
-                
+
                 if posts:
                     print(f"\n  Recent Posts for @{username}:")
                     for i, post in enumerate(posts[:5], 1):
@@ -245,12 +213,12 @@ Examples:
                         print(f"  {i}. [{post.post_type}] ❤️{post.likes:,} 💬{post.comments:,} | {ts}")
                         if cap:
                             print(f"     {cap}")
-                    
+
                     if len(posts) > 5:
                         print(f"  ... and {len(posts) - 5} more posts")
-            
+
             # ==================== FOLLOWERS ====================
-            
+
             if args.followers:
                 followers = client.get_followers(username, count=args.count)
                 if followers:
@@ -259,9 +227,9 @@ Examples:
                         print(f"    @{f_user['username']} — {f_user.get('full_name', '')}")
                     if len(followers) > 10:
                         print(f"    ... and {len(followers) - 10} more")
-            
+
             # ==================== FOLLOWING ====================
-            
+
             if args.following:
                 following = client.get_following(username, count=args.count)
                 if following:
@@ -272,42 +240,42 @@ Examples:
                         print(f"    ... and {len(following) - 10} more")
         else:
             print(f"\n  [!] Failed to scrape @{username}")
-    
+
     # ==================== LOCATION CLUSTERING ====================
-    
+
     if args.cluster_location and len(args.usernames) > 1:
         print("\n[*] Running location clustering...")
         analyzer = LocationClusterAnalyzer()
-        
+
         user_locations = {}
         for profile in profiles:
             posts = client.get_posts(profile.username, count=50)
             loc = analyzer.analyze_user(posts)
             user_locations[profile.username] = loc
-            
+
             # Predict location
             prediction = analyzer.predict_location(profile.username, posts)
             if prediction['predicted_city']:
                 print(f"  @{profile.username}: {prediction['predicted_city']}, {prediction['predicted_country']} "
                       f"(confidence: {prediction['confidence']:.0%})")
-        
+
         clusters = analyzer.cluster_users(user_locations)
         report = analyzer.generate_report(clusters, user_locations)
         print(report)
-        
+
         if args.save or args.export:
             exporter.clusters_to_json(clusters)
-    
+
     # ==================== COMPARE ====================
-    
+
     if args.compare and len(profiles) > 1:
         exporter.comparison_report(profiles)
-    
+
     # ==================== EXPORT ====================
-    
+
     if args.save or args.export:
         fmt = args.export or 'json'
-        
+
         if profiles:
             if fmt == 'json':
                 exporter.profiles_to_json(profiles)
@@ -315,22 +283,22 @@ Examples:
                 exporter.profiles_to_csv(profiles)
             elif fmt == 'excel':
                 exporter.to_excel(profiles, all_posts if all_posts else None)
-        
+
         if all_posts:
             if fmt == 'json':
                 exporter.posts_to_json(all_posts, args.usernames[0] if len(args.usernames) == 1 else '')
             elif fmt == 'csv':
                 exporter.posts_to_csv(all_posts, args.usernames[0] if len(args.usernames) == 1 else '')
-    
+
     # ==================== STATS ====================
-    
+
     stats = client.get_stats()
     print(f"\n  Client Stats:")
     print(f"    Total requests: {stats['total_requests']}")
     for layer, count in stats['layer_usage'].items():
         if count > 0:
             print(f"    {layer}: {count} requests")
-    
+
     # RL Rate Limiter stats
     if args.rl_stats and client.rate_limiter:
         client.rate_limiter.print_stats()
@@ -339,7 +307,7 @@ Examples:
         rl = stats['rl_rate_limiter']
         print(f"    RL steps: {rl['total_steps']}, ε={rl['epsilon']:.4f}, "
               f"dominant: {rl['dominant_action']}")
-    
+
     # Account Router stats
     if client.router:
         if args.ring_status:
@@ -348,7 +316,7 @@ Examples:
             rs = stats.get('account_router', {})
             print(f"    Accounts: {rs.get('active_accounts', 0)}/{rs.get('total_accounts', 0)} active, "
                   f"rerouted: {rs.get('total_rerouted', 0)}")
-    
+
     # Proxy pool stats
     if client.proxy_manager:
         if args.proxy_status:
@@ -357,7 +325,7 @@ Examples:
             ps = stats.get('proxy_pool', {})
             print(f"    Proxies: {ps.get('active_proxies', 0)}/{ps.get('total_proxies', 0)} active, "
                   f"avg latency: {ps.get('avg_latency_ms', 0):.0f}ms")
-    
+
     # Browser Engine stats
     if args.engine_status:
         client.hybrid_engine.print_engine_status()
@@ -369,9 +337,5 @@ Examples:
     # Save RL policy
     if client.rate_limiter:
         client.rate_limiter.save_policy()
-    
+
     print("\n  Done! 🎉")
-
-
-if __name__ == "__main__":
-    main()
