@@ -26,9 +26,10 @@ except ImportError:
     BrowserContext = None
 
 try:
-    from playwright_stealth import stealth_async
+    from playwright_stealth import Stealth
+    _stealth_obj = Stealth()
 except ImportError:
-    stealth_async = None
+    _stealth_obj = None
 
 from .models import ShopeeProduct, ProductVariant
 
@@ -315,8 +316,8 @@ class ShopeeBrowser:
         self._page = await self._context.new_page()
         
         # Apply stealth
-        if stealth_async:
-            await stealth_async(self._page)
+        if _stealth_obj:
+            await _stealth_obj.apply_stealth_async(self._page)
             logger.debug("[ShopeeBrowser] Stealth applied")
         else:
             # Manual stealth fallback

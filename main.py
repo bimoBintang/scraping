@@ -100,8 +100,11 @@ Examples:
   python main.py tiktok username --full-bypass --cookies c.json     DOM bypass
         """
     )
-    from tiktok._main import add_arguments as tiktok_add_args
-    tiktok_add_args(tiktok_parser)
+    try:
+        from tiktok._main import add_arguments as tiktok_add_args
+        tiktok_add_args(tiktok_parser)
+    except ImportError as e:
+        tiktok_parser.description = f"⚠️ TikTok module unavailable: {e}"
 
     # ─── Instagram ───────────────────────────────────────────────────
     instagram_parser = subparsers.add_parser(
@@ -119,8 +122,11 @@ Examples:
   python main.py instagram --discover-doc-ids               Refresh doc_ids
         """
     )
-    from instagram._main import add_arguments as instagram_add_args
-    instagram_add_args(instagram_parser)
+    try:
+        from instagram._main import add_arguments as instagram_add_args
+        instagram_add_args(instagram_parser)
+    except ImportError as e:
+        instagram_parser.description = f"⚠️ Instagram module unavailable: {e}"
 
     # ─── Shopee ──────────────────────────────────────────────────────
     shopee_parser = subparsers.add_parser(
@@ -138,8 +144,11 @@ Examples:
   python main.py shopee export wishlist --format csv
         """
     )
-    from shopee._main import add_arguments as shopee_add_args
-    shopee_add_args(shopee_parser)
+    try:
+        from shopee._main import add_arguments as shopee_add_args
+        shopee_add_args(shopee_parser)
+    except ImportError as e:
+        shopee_parser.description = f"⚠️ Shopee module unavailable: {e}"
 
     # Keep references to platform parsers for interactive help
     platform_parsers = {
