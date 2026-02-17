@@ -37,10 +37,12 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .models import InstagramPost
+from .checkpoint import CheckpointManager, CheckpointState
 
 
 # ==================== MEMORY MONITOR ====================
@@ -487,6 +489,11 @@ class StreamingPostFetcher:
         processor: Optional[ChunkProcessor] = None,
         monitor: Optional[MemoryMonitor] = None,
         chunk_size: int = 50,
+        checkpoint_mgr: Optional[CheckpointManager] = None,
+        resume_state: Optional[CheckpointState] = None,
+        fmt: str = "jsonl",
+        output: str = ".",
+        filters: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """
         Stream posts for a user to a writer, chunk by chunk.
@@ -498,91 +505,161 @@ class StreamingPostFetcher:
             processor: Optional ChunkProcessor for filtering
             monitor: Optional MemoryMonitor for RSS tracking
             chunk_size: Batch size per fetch (max 50)
+            checkpoint_mgr: Optional CheckpointManager for resume
+            resume_state: Optional CheckpointState to resume from
+            fmt: Output format (for checkpoint metadata)
+            output: Output path (for checkpoint metadata)
+            filters: Filter config (for checkpoint metadata)
 
         Returns:
             Stats dict with totals and timing
         """
-        print(f"\n  [🔄] Streaming {count} posts for @{username}...")
-
-        # Get user_id first
-        profile = self.client.get_profile(username)
-        if not profile or not profile.user_id:
-            print("  [!] Could not get user_id")
-            return {'error': 'no_user_id', 'fetched': 0}
-
-        chunk_size = min(chunk_size, 50)
+        # Restore state from checkpoint if resuming
         cursor = ""
         total_fetched = 0
         total_written = 0
         chunk_num = 0
+        user_id = ""
+
+        if resume_state and resume_state.is_resumable():
+            cursor = resume_state.cursor
+            total_fetched = resume_state.total_fetched
+            total_written = resume_state.total_written
+            chunk_num = resume_state.chunk_num
+            user_id = resume_state.user_id
+            print(f"\n  [🔄] Resuming @{username} from chunk {chunk_num} "
+                  f"({total_fetched}/{count} fetched, cursor={cursor[:20]}...)")
+        else:
+            print(f"\n  [🔄] Streaming {count} posts for @{username}...")
+
+        # Get user_id (use cached from checkpoint or fetch fresh)
+        if not user_id:
+            profile = self.client.get_profile(username)
+            if not profile or not profile.user_id:
+                print("  [!] Could not get user_id")
+                if checkpoint_mgr:
+                    checkpoint_mgr.mark_failed(username, "no_user_id")
+                return {'error': 'no_user_id', 'fetched': 0}
+            user_id = profile.user_id
+
+        chunk_size = min(chunk_size, 50)
         start_time = time.time()
+        started_at = (
+            resume_state.started_at if resume_state
+            else datetime.now().isoformat()
+        )
 
-        while total_fetched < count:
-            fetch_count = min(chunk_size, count - total_fetched)
+        try:
+            while total_fetched < count:
+                fetch_count = min(chunk_size, count - total_fetched)
 
-            # Fetch one batch
-            batch = self.client._fetch_posts_batch(
-                profile.user_id,
-                cursor=cursor,
-                count=fetch_count,
-            )
+                # Fetch one batch
+                batch = self.client._fetch_posts_batch(
+                    user_id,
+                    cursor=cursor,
+                    count=fetch_count,
+                )
 
-            if not batch:
-                break
+                if not batch:
+                    break
 
-            posts, pagination = batch
-            chunk_num += 1
+                posts, pagination = batch
+                chunk_num += 1
 
-            # Convert to dicts immediately (frees InstagramPost objects)
-            records = [p.to_dict() for p in posts]
-            records_for_write = records  # will be reassigned after processing
-            del posts  # free the original list
+                # Convert to dicts immediately (frees InstagramPost objects)
+                records = [p.to_dict() for p in posts]
+                records_for_write = records
+                del posts
 
-            # Apply processor (filter + transform)
-            if processor:
-                records_for_write = processor.process(records)
+                # Apply processor (filter + transform)
+                if processor:
+                    records_for_write = processor.process(records)
 
-            # Write to sink
-            if records_for_write:
-                writer.write_chunk(records_for_write)
-                total_written += len(records_for_write)
+                # Write to sink
+                if records_for_write:
+                    writer.write_chunk(records_for_write)
+                    total_written += len(records_for_write)
 
-            total_fetched += len(records)
+                total_fetched += len(records)
 
-            # Progress
-            pct = min(total_fetched / count * 100, 100)
-            elapsed = time.time() - start_time
-            rate = total_fetched / elapsed if elapsed > 0 else 0
-            eta = (count - total_fetched) / rate if rate > 0 else 0
+                # Update cursor BEFORE checkpoint
+                next_cursor = pagination.get('end_cursor', '')
+                has_next = pagination.get('has_next_page', False)
 
-            sys.stdout.write(
-                f"\r  [{'█' * int(pct // 5)}{'░' * (20 - int(pct // 5))}] "
-                f"{pct:5.1f}% | {total_fetched}/{count} fetched | "
-                f"{total_written} written | {rate:.0f}/s | ETA {eta:.0f}s"
-            )
-            sys.stdout.flush()
+                # Save checkpoint after each chunk
+                if checkpoint_mgr:
+                    cp_state = CheckpointState(
+                        username=username,
+                        user_id=user_id,
+                        cursor=next_cursor if has_next else "",
+                        total_fetched=total_fetched,
+                        total_written=total_written,
+                        chunk_num=chunk_num,
+                        target_count=count,
+                        fmt=fmt,
+                        output=output,
+                        chunk_size=chunk_size,
+                        filters=filters or {},
+                        started_at=started_at,
+                        elapsed_seconds=round(time.time() - start_time, 1),
+                        status="in_progress",
+                    )
+                    checkpoint_mgr.save(cp_state)
 
-            # Memory check
-            if monitor and not monitor.check(chunk_num):
-                print("\n  [!] Stopping due to memory limit")
-                break
+                # Progress bar
+                pct = min(total_fetched / count * 100, 100)
+                elapsed = time.time() - start_time
+                rate = total_fetched / elapsed if elapsed > 0 else 0
+                eta = (count - total_fetched) / rate if rate > 0 else 0
 
-            # Free chunk memory
-            del records
-            del records_for_write
+                cp_icon = " 💾" if checkpoint_mgr else ""
+                sys.stdout.write(
+                    f"\r  [{'█' * int(pct // 5)}{'░' * (20 - int(pct // 5))}] "
+                    f"{pct:5.1f}% | {total_fetched}/{count} fetched | "
+                    f"{total_written} written | {rate:.0f}/s | ETA {eta:.0f}s{cp_icon}"
+                )
+                sys.stdout.flush()
 
-            # Pagination
-            if not pagination.get('has_next_page'):
-                break
-            cursor = pagination.get('end_cursor', '')
+                # Memory check
+                if monitor and not monitor.check(chunk_num):
+                    print("\n  [!] Stopping due to memory limit")
+                    break
 
-            # Rate limiting
-            from .utils import smart_delay
-            smart_delay(1.5, 3.0)
+                # Free chunk memory
+                del records
+                del records_for_write
+
+                # Pagination
+                if not has_next:
+                    break
+                cursor = next_cursor
+
+                # Rate limiting
+                from .utils import smart_delay
+                smart_delay(1.5, 3.0)
+
+        except (KeyboardInterrupt, Exception) as e:
+            # Save checkpoint on error so we can resume
+            if checkpoint_mgr:
+                is_interrupt = isinstance(e, KeyboardInterrupt)
+                if is_interrupt:
+                    print(f"\n  [⚡] Interrupted — checkpoint saved at {total_fetched} posts")
+                else:
+                    print(f"\n  [!] Error: {e} — checkpoint saved")
+                    checkpoint_mgr.mark_failed(username, str(e))
+            if isinstance(e, KeyboardInterrupt):
+                pass  # graceful exit
+            else:
+                raise
 
         elapsed = time.time() - start_time
         print(f"\n  [✓] Done: {total_fetched} fetched, {total_written} written "
               f"in {elapsed:.1f}s")
+
+        # Mark completed if we fetched everything
+        if checkpoint_mgr and total_fetched >= count:
+            checkpoint_mgr.mark_completed(username)
+            print(f"  [💾] Checkpoint marked completed")
 
         return {
             'username': username,
@@ -622,6 +699,8 @@ class StreamOrchestrator:
         mongo_uri: str = "mongodb://localhost:27017",
         mongo_db: str = "instascope",
         memory_limit_mb: float = 1000.0,
+        resume: bool = False,
+        checkpoint_dir: str = ".checkpoint",
     ) -> Dict[str, Any]:
         """
         Run the streaming pipeline.
@@ -636,6 +715,8 @@ class StreamOrchestrator:
             mongo_uri: MongoDB connection URI
             mongo_db: MongoDB database name
             memory_limit_mb: Memory limit in MB
+            resume: Resume from last checkpoint
+            checkpoint_dir: Checkpoint directory path
 
         Returns:
             Combined stats for all usernames
@@ -643,6 +724,8 @@ class StreamOrchestrator:
         print(f"\n{'='*60}")
         print(f"  📦 Streaming Parser — {fmt.upper()} mode")
         print(f"  Users: {len(usernames)}, Count: {count}/user, Chunk: {chunk_size}")
+        if resume:
+            print(f"  🔄 Resume mode: ON (checkpoints in {checkpoint_dir})")
         print(f"{'='*60}")
 
         monitor = MemoryMonitor(
@@ -653,11 +736,34 @@ class StreamOrchestrator:
         # Build processor with filters
         processor = self._build_processor(filters)
 
+        # Checkpoint manager (always active for save, resume controls restore)
+        cp_mgr = CheckpointManager(checkpoint_dir)
+
         all_stats = []
         start_total = time.time()
 
         for username in usernames:
             username = username.lstrip('@').strip()
+
+            # Check for existing checkpoint
+            resume_state = None
+            if resume:
+                resume_state = cp_mgr.load(username)
+                if resume_state and resume_state.is_resumable():
+                    # Override config from checkpoint
+                    fmt = resume_state.fmt
+                    output = resume_state.output
+                    count = resume_state.target_count
+                    chunk_size = resume_state.chunk_size
+                    if resume_state.filters:
+                        filters = resume_state.filters
+                        processor = self._build_processor(filters)
+                    print(f"\n  💾 Checkpoint found for @{username}: "
+                          f"{resume_state.total_fetched}/{resume_state.target_count} "
+                          f"({resume_state.progress_pct():.1f}%)")
+                else:
+                    print(f"\n  [i] No resumable checkpoint for @{username} — starting fresh")
+                    resume_state = None
 
             # Create writer for this user
             writer = self._create_writer(
@@ -672,6 +778,11 @@ class StreamOrchestrator:
                     processor=processor,
                     monitor=monitor,
                     chunk_size=chunk_size,
+                    checkpoint_mgr=cp_mgr,
+                    resume_state=resume_state,
+                    fmt=fmt,
+                    output=output,
+                    filters=filters,
                 )
                 stats['sink'] = fmt
                 all_stats.append(stats)

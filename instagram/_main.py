@@ -56,6 +56,14 @@ def add_arguments(parser):
     parser.add_argument('--filter-min-likes', type=int, help='Filter: minimum likes')
     parser.add_argument('--filter-has-location', action='store_true',
                         help='Filter: only posts with location data')
+    parser.add_argument('--resume', action='store_true',
+                        help='Resume streaming from last checkpoint (Algorithm 13)')
+    parser.add_argument('--checkpoint-dir', type=str, default='.checkpoint',
+                        help='Checkpoint directory (default: .checkpoint)')
+    parser.add_argument('--checkpoint-status', action='store_true',
+                        help='Show all active checkpoints')
+    parser.add_argument('--checkpoint-clear', action='store_true',
+                        help='Clear checkpoint for target username(s)')
 
     # Options
     parser.add_argument('--count', type=int, default=12, help='Number of items to fetch (default: 12)')
@@ -205,7 +213,26 @@ def main(args):
                 print(f"  [+] Report saved to instagram_{username}_anomaly_report.json")
         return
 
-    # ==================== STREAMING MODE (Algorithm 12) ====================
+    # ==================== CHECKPOINT STATUS (Algorithm 13) ====================
+
+    if args.checkpoint_status:
+        from .checkpoint import CheckpointManager
+        cp = CheckpointManager(args.checkpoint_dir)
+        cp.print_status()
+        return
+
+    if args.checkpoint_clear and args.usernames:
+        from .checkpoint import CheckpointManager
+        cp = CheckpointManager(args.checkpoint_dir)
+        for u in args.usernames:
+            u = u.lstrip('@').strip()
+            if cp.delete(u):
+                print(f"  [✓] Cleared checkpoint for @{u}")
+            else:
+                print(f"  [i] No checkpoint found for @{u}")
+        return
+
+    # ==================== STREAMING MODE (Algorithm 12 + 13) ====================
 
     if args.stream and args.usernames:
         filters = {}
@@ -223,6 +250,8 @@ def main(args):
             filters=filters if filters else None,
             mongo_uri=args.mongo_uri,
             mongo_db=args.mongo_db,
+            resume=args.resume,
+            checkpoint_dir=args.checkpoint_dir,
         )
         return
 

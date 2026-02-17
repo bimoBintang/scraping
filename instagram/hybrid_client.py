@@ -389,12 +389,14 @@ class HybridInstagramClient:
         filters: dict = None,
         mongo_uri: str = "mongodb://localhost:27017",
         mongo_db: str = "instascope",
+        resume: bool = False,
+        checkpoint_dir: str = ".checkpoint",
     ):
         """
-        Algorithm 12: Memory-Efficient Streaming Parser.
+        Algorithm 12 + 13: Streaming Parser with Checkpoint Resume.
         
         Stream posts chunk-by-chunk to file/database without holding
-        all data in memory. Supports JSONL, CSV, SQLite, MongoDB.
+        all data in memory. Supports resume from checkpoint.
         
         Args:
             usernames: List of Instagram usernames
@@ -405,6 +407,8 @@ class HybridInstagramClient:
             filters: Filter config (min_likes, has_location, etc.)
             mongo_uri: MongoDB URI (for mongodb format)
             mongo_db: MongoDB database name
+            resume: Resume from last checkpoint
+            checkpoint_dir: Checkpoint directory path
         """
         from .streaming_parser import StreamOrchestrator
         
@@ -418,6 +422,8 @@ class HybridInstagramClient:
             filters=filters,
             mongo_uri=mongo_uri,
             mongo_db=mongo_db,
+            resume=resume,
+            checkpoint_dir=checkpoint_dir,
         )
     
     def get_followers(self, username: str, count: int = 100) -> List[Dict]:

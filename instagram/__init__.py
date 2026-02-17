@@ -102,6 +102,11 @@ from .streaming_parser import (
     ChunkProcessor,
 )
 
+from .checkpoint import (
+    CheckpointManager,
+    CheckpointState,
+)
+
 from .utils import (
     load_cookies,
     generate_web_headers,
@@ -110,7 +115,7 @@ from .utils import (
     smart_delay,
 )
 
-__version__ = "1.8.0"
+__version__ = "1.9.0"
 __all__ = [
     # Models
     'InstagramProfile', 'InstagramPost', 'InstagramStory',
@@ -149,6 +154,8 @@ __all__ = [
     'StreamOrchestrator', 'StreamingPostFetcher', 'MemoryMonitor',
     'JsonlStreamWriter', 'CsvStreamWriter', 'SqliteStreamWriter', 'MongoStreamWriter',
     'ChunkProcessor',
+    # Checkpoint
+    'CheckpointManager', 'CheckpointState',
     # Utils
     'load_cookies', 'generate_web_headers', 'smart_delay',
 ]
