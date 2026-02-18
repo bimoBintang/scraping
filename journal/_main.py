@@ -26,6 +26,7 @@ Examples:
   python main.py journal harvest --topic "computer vision" --year 2025 --count 500
   python main.py journal author "Geoffrey Hinton" --network --count 50
   python main.py journal intent 10.1038/s41586-021-03819-2 --count 100
+  python main.py journal frontier "machine learning" --topics 10 --years 2020-2026
         """,
     )
 
@@ -113,6 +114,17 @@ Examples:
                           help='Export format')
     intent_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── FRONTIER (J8) ──
+    front_p = sub.add_parser('frontier', help='Emerging research frontier detection (Algorithm J8)')
+    front_p.add_argument('query', type=str, help='Broad research area to scan')
+    front_p.add_argument('--topics', type=int, default=10,
+                         help='Number of sub-topics to analyze (default: 10)')
+    front_p.add_argument('--years', type=str, default='2018-2026',
+                         help='Year range (default: 2018-2026)')
+    front_p.add_argument('--export', type=str, choices=['json'],
+                         help='Export format')
+    front_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -122,10 +134,11 @@ def run(args):
     from .search_engine import FederatedSearch, CitationCrawler, TrendAnalyzer, PaperRecommender
     from .author_network import AuthorDisambiguator, CollaborationNetwork
     from .citation_analyzer import CitationClassifier, CitationImpactAnalyzer
+    from .frontier_detector import ResearchFrontierDetector
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -335,6 +348,26 @@ def run(args):
 
         if args.export == 'json' and report.analyzed_citations > 0:
             filepath = Path(args.output) / f"intent_{args.doi.replace('/', '_')[:30]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== FRONTIER (J8) ====================
+    elif args.command == 'frontier':
+        years = args.years.split('-')
+        start_year = int(years[0])
+        end_year = int(years[1]) if len(years) > 1 else start_year
+
+        detector = ResearchFrontierDetector()
+        report = detector.detect(
+            query=args.query,
+            n_topics=args.topics,
+            start_year=start_year,
+            end_year=end_year,
+        )
+
+        if args.export == 'json' and report.frontiers:
+            filepath = Path(args.output) / f"frontier_{args.query.replace(' ', '_')[:20]}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")

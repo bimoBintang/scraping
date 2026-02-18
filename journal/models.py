@@ -310,3 +310,51 @@ class CitationImpactReport:
             'top_supporters': self.top_supporters,
             'top_critics': self.top_critics,
         }
+
+
+# ==================== J8: RESEARCH FRONTIER MODELS ====================
+
+@dataclass
+class FrontierTopic:
+    """An emerging research frontier topic with detection scores"""
+    topic: str
+    frontier_score: float = 0.0          # composite score 0.0–1.0
+    growth_rate: float = 0.0             # year-over-year publication growth %
+    citation_velocity: float = 0.0       # avg citations/year for recent papers
+    author_diversity: float = 0.0        # institution spread score
+    keyword_novelty: float = 0.0         # keyword co-occurrence novelty
+
+    # Time-series data
+    yearly_counts: Dict[int, int] = field(default_factory=dict)
+
+    # Prediction
+    predicted_growth: float = 0.0        # predicted papers in next year
+    trajectory: str = "stable"           # emerging, surging, stable, declining
+
+    # Related keywords
+    emerging_keywords: List[str] = field(default_factory=list)
+    sample_papers: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class FrontierReport:
+    """Full frontier detection report"""
+    query: str = ""
+    year_range: str = ""
+    total_topics_analyzed: int = 0
+    frontiers: List[FrontierTopic] = field(default_factory=list)
+    keyword_clusters: List[List[str]] = field(default_factory=list)
+    top_emerging: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            'query': self.query,
+            'year_range': self.year_range,
+            'total_topics_analyzed': self.total_topics_analyzed,
+            'frontiers': [f.to_dict() for f in self.frontiers],
+            'keyword_clusters': self.keyword_clusters,
+            'top_emerging': self.top_emerging,
+        }
