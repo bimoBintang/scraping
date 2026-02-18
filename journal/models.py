@@ -421,3 +421,52 @@ class JournalRankReport:
             'compared_journals': [j.to_dict() for j in self.compared_journals],
             'recommendation': self.recommendation,
         }
+
+
+# ==================== J10: LITERATURE REVIEW MODELS ====================
+
+@dataclass
+class ReviewSection:
+    """A section in a literature review"""
+    title: str = ""
+    content: str = ""
+    papers: List[str] = field(default_factory=list)        # paper titles referenced
+    paper_count: int = 0
+    theme_keywords: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class LiteratureReview:
+    """Complete auto-generated literature review"""
+    query: str = ""
+    title: str = ""
+    total_papers: int = 0
+    year_range: str = ""
+
+    # Sections
+    introduction: str = ""
+    sections: List[ReviewSection] = field(default_factory=list)
+    research_gaps: List[str] = field(default_factory=list)
+    conclusion: str = ""
+
+    # Bibliography
+    bibliography: List[str] = field(default_factory=list)
+
+    # Full markdown
+    full_text: str = ""
+
+    def to_dict(self) -> Dict:
+        return {
+            'query': self.query,
+            'title': self.title,
+            'total_papers': self.total_papers,
+            'year_range': self.year_range,
+            'introduction': self.introduction,
+            'sections': [s.to_dict() for s in self.sections],
+            'research_gaps': self.research_gaps,
+            'conclusion': self.conclusion,
+            'bibliography': self.bibliography,
+        }

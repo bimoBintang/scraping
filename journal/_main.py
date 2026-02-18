@@ -29,6 +29,7 @@ Examples:
   python main.py journal frontier "machine learning" --topics 10 --years 2020-2026
   python main.py journal rank "Nature" --years 2020-2025
   python main.py journal rank --compare "Nature,Science,IEEE" --year 2025
+  python main.py journal review "transformer attention" --count 30 --export markdown
         """,
     )
 
@@ -140,6 +141,18 @@ Examples:
                         help='Export format')
     rank_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── REVIEW (J10) ──
+    rev_p = sub.add_parser('review', help='Auto literature review generator (Algorithm J10)')
+    rev_p.add_argument('query', type=str, help='Research topic for review')
+    rev_p.add_argument('--count', type=int, default=30,
+                       help='Number of papers to include (default: 30)')
+    rev_p.add_argument('--style', type=str, default='thematic',
+                       choices=['thematic', 'chronological'],
+                       help='Review organization style (default: thematic)')
+    rev_p.add_argument('--export', type=str, choices=['markdown', 'json'],
+                       help='Export format')
+    rev_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -151,10 +164,11 @@ def run(args):
     from .citation_analyzer import CitationClassifier, CitationImpactAnalyzer
     from .frontier_detector import ResearchFrontierDetector
     from .journal_ranker import JournalMetricsCalculator, JournalRankPredictor
+    from .review_generator import LiteratureReviewGenerator
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -409,6 +423,24 @@ def run(args):
             filepath = Path(args.output) / f"rank_{name}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== REVIEW (J10) ====================
+    elif args.command == 'review':
+        generator = LiteratureReviewGenerator()
+        review = generator.generate(
+            query=args.query,
+            n_papers=args.count,
+            style=args.style,
+        )
+
+        if args.export == 'markdown' and review.full_text:
+            filepath = Path(args.output) / f"review_{args.query.replace(' ', '_')[:20]}.md"
+            generator.export_markdown(review, str(filepath))
+        elif args.export == 'json' and review.total_papers > 0:
+            filepath = Path(args.output) / f"review_{args.query.replace(' ', '_')[:20]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(review.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")
 
     else:
