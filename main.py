@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-INSTASCOPE — Unified Social Media Scraping Platform v5.3
-Supports TikTok, Instagram, and Shopee with one CLI entry point.
+INSTASCOPE — Unified Social Media Scraping Platform v5.4
+Supports TikTok, Instagram, Shopee, and Journal with one CLI entry point.
 
 Usage:
     python main.py tiktok <username> --bfs --depth 2 --cookies cookies.json
@@ -67,8 +67,8 @@ def main():
 {BOLD}Usage:{RESET}
   python main.py tiktok <username>                     Profile scraping
   python main.py tiktok <username> --bfs --depth 2     BFS crawling
-  python main.py instagram cristiano --posts           Fetch posts
-  python main.py instagram cristiano --highlights      Story highlights
+  python main.py instagram <username> --posts           Fetch posts
+  python main.py instagram <username> --highlights      Story highlights
   python main.py shopee search "laptop gaming"         Search products
   python main.py shopee add <url> --target 5000000     Wishlist tracking
 
@@ -79,7 +79,7 @@ def main():
         """
     )
 
-    parser.add_argument("--version", "-v", action="version", version="INSTASCOPE v5.3")
+    parser.add_argument("--version", "-v", action="version", version="INSTASCOPE v5.4")
     parser.add_argument("--no-banner", action="store_true", help="Sembunyikan banner ASCII")
     parser.add_argument("--list-platforms", action="store_true", help="Tampilkan daftar platform")
 
@@ -113,10 +113,10 @@ Examples:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py instagram cristiano                        Profile info
-  python main.py instagram cristiano --posts --count 50     Fetch 50 posts
-  python main.py instagram cristiano --highlights           Story highlights
-  python main.py instagram cristiano --engine selenium      Force Selenium
+  python main.py instagram <username>                        Profile info
+  python main.py instagram <username> --posts --count 50     Fetch 50 posts
+  python main.py instagram <username> --highlights           Story highlights
+  python main.py instagram <username> --engine selenium      Force Selenium
   python main.py instagram user1 user2 --compare            Compare profiles
   python main.py instagram --search "photography"           Search users
   python main.py instagram --discover-doc-ids               Refresh doc_ids
@@ -150,11 +150,22 @@ Examples:
     except ImportError as e:
         shopee_parser.description = f"⚠️ Shopee module unavailable: {e}"
 
+    # ─── Journal ──────────────────────────────────────────────────────
+    try:
+        from journal._main import setup_parser as journal_setup
+        journal_parser = journal_setup(subparsers)
+    except ImportError as e:
+        journal_parser = subparsers.add_parser(
+            'journal',
+            help=f'⚠️ Journal module unavailable: {e}',
+        )
+
     # Keep references to platform parsers for interactive help
     platform_parsers = {
         'tiktok': tiktok_parser,
         'instagram': instagram_parser,
         'shopee': shopee_parser,
+        'journal': journal_parser,
     }
 
     # ─── Parse and dispatch ──────────────────────────────────────────
@@ -173,17 +184,18 @@ Examples:
         print(f"  1. {BOLD}tiktok{RESET}")
         print(f"  2. {BOLD}instagram{RESET}")
         print(f"  3. {BOLD}shopee{RESET}")
+        print(f"  4. {BOLD}journal{RESET}")
         print(f"  h. {DIM}help{RESET}")
         print(f"  q. {DIM}exit{RESET}")
         
         try:
-            choice = input(f"\n  {GREEN}Pilihan (1-3/h/q): {RESET}").lower().strip()
+            choice = input(f"\n  {GREEN}Pilihan (1-4/h/q): {RESET}").lower().strip()
         except KeyboardInterrupt:
             print(f"\n\n  {YELLOW}Exiting...{RESET}")
             sys.exit(0)
         
-        if choice in ('1', '2', '3'):
-            args.platform = {'1': 'tiktok', '2': 'instagram', '3': 'shopee'}[choice]
+        if choice in ('1', '2', '3', '4'):
+            args.platform = {'1': 'tiktok', '2': 'instagram', '3': 'shopee', '4': 'journal'}[choice]
             interactive = True
         elif choice == 'h':
             parser.print_help()
@@ -216,6 +228,10 @@ Examples:
     elif args.platform == "shopee":
         from shopee._main import main as shopee_main
         shopee_main(args)
+
+    elif args.platform == "journal":
+        from journal._main import run as journal_run
+        journal_run(args)
 
 
 if __name__ == "__main__":
