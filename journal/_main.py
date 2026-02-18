@@ -35,6 +35,7 @@ Examples:
   python main.py journal oa 10.1038/s41586-021-03819-2 --funder nsf --export json
   python main.py journal forecast 10.1038/s41586-021-03819-2 --export json
   python main.py journal sysrev "COVID-19 vaccine" --count 100 --include "RCT,clinical" --export json
+  python main.py journal bibmap "deep learning" --type keyword --count 50 --export gexf
         """,
     )
 
@@ -208,6 +209,18 @@ Examples:
                        help='Export format')
     sys_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── BIBMAP (J16) ──
+    bib_p = sub.add_parser('bibmap', help='Bibliometric mapping & visualization (Algorithm J16)')
+    bib_p.add_argument('query', type=str, help='Search query')
+    bib_p.add_argument('--type', type=str, default='keyword',
+                       choices=['cocitation', 'coupling', 'keyword'],
+                       help='Map type (default: keyword)')
+    bib_p.add_argument('--count', type=int, default=50,
+                       help='Number of papers to analyze (default: 50)')
+    bib_p.add_argument('--export', type=str, choices=['json', 'gexf', 'vosviewer'],
+                       help='Export format')
+    bib_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -225,10 +238,11 @@ def run(args):
     from .oa_checker import OAComplianceChecker
     from .impact_forecaster import ResearchImpactForecaster
     from .systematic_review import SystematicReviewAssistant
+    from .bibliometric_map import BibliometricMapper, NetworkExporter
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev, bibmap")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -587,6 +601,37 @@ def run(args):
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")
+
+    # ==================== BIBMAP (J16) ====================
+    elif args.command == 'bibmap':
+        mapper = BibliometricMapper()
+        bmap = mapper.map(
+            query=args.query,
+            map_type=args.type,
+            n_papers=args.count,
+        )
+
+        if args.export and len(bmap.nodes) > 0:
+            slug = args.query.replace(' ', '_')[:20]
+            if args.export == 'json':
+                filepath = Path(args.output) / f"bibmap_{slug}.json"
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(bmap.to_dict(), f, indent=2, ensure_ascii=False)
+                print(f"  [✓] Exported → {filepath}")
+            elif args.export == 'gexf':
+                filepath = Path(args.output) / f"bibmap_{slug}.gexf"
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(NetworkExporter.to_gexf(bmap))
+                print(f"  [✓] Exported GEXF → {filepath}")
+            elif args.export == 'vosviewer':
+                nodes_csv, edges_csv = NetworkExporter.to_vosviewer(bmap)
+                npath = Path(args.output) / f"bibmap_{slug}_nodes.csv"
+                epath = Path(args.output) / f"bibmap_{slug}_edges.csv"
+                with open(npath, 'w') as f:
+                    f.write(nodes_csv)
+                with open(epath, 'w') as f:
+                    f.write(edges_csv)
+                print(f"  [✓] Exported VOSviewer → {npath}, {epath}")
 
     else:
         print(f"  [!] Unknown command: {args.command}")

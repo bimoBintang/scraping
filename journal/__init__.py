@@ -6,7 +6,7 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   - Semantic Scholar (214M, AI-powered)
   - CrossRef (DOI resolver)
 
-15 Algorithms:
+16 Algorithms:
   J1:  Federated Search   — multi-source parallel search
   J2:  Citation Crawler    — BFS citation graph traversal
   J3:  Trend Analyzer      — research trend time-series
@@ -22,6 +22,7 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   J13: OA Checker          — open access compliance checking
   J14: Impact Forecaster   — research impact prediction
   J15: Systematic Review   — systematic review assistant
+  J16: Bibliometric Map    — bibliometric mapping & visualization
 """
 
 from .models import (
@@ -53,6 +54,9 @@ from .models import (
     ScreeningResult,
     BiasAssessment,
     SystematicReviewReport,
+    BibNode,
+    BibEdge,
+    BibliometricMap,
 )
 
 from .api_client import (
@@ -128,9 +132,17 @@ from .systematic_review import (
     SystematicReviewAssistant,
 )
 
+from .bibliometric_map import (
+    CoCitationBuilder,
+    BibCouplingBuilder,
+    KeywordCoOccurrence,
+    NetworkExporter,
+    BibliometricMapper,
+)
+
 from .exporter import JournalExporter
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __all__ = [
     # Models
     'Paper', 'Author', 'CitationEdge',
@@ -145,6 +157,7 @@ __all__ = [
     'OAStatus', 'ComplianceReport',
     'PaperFeatures', 'ImpactForecast',
     'ScreeningResult', 'BiasAssessment', 'SystematicReviewReport',
+    'BibNode', 'BibEdge', 'BibliometricMap',
     # API Clients
     'OpenAlexClient', 'SemanticScholarClient', 'CrossRefClient',
     # Algorithms
@@ -166,6 +179,9 @@ __all__ = [
     'QueryExpander', 'AbstractScreener',
     'BiasAssessor', 'DataExtractor',
     'SystematicReviewAssistant',
+    'CoCitationBuilder', 'BibCouplingBuilder',
+    'KeywordCoOccurrence', 'NetworkExporter',
+    'BibliometricMapper',
     # Exporter
     'JournalExporter',
 ]

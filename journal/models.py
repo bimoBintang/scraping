@@ -764,3 +764,58 @@ class SystematicReviewReport:
             'study_types': self.study_types,
             'prisma_flow': self.prisma_flow,
         }
+
+
+# ==================== J16: BIBLIOMETRIC MAP MODELS ====================
+
+@dataclass
+class BibNode:
+    """Node in a bibliometric network"""
+    id: str = ""
+    label: str = ""
+    cluster: int = 0
+    size: float = 1.0
+    node_type: str = ""  # paper, author, keyword
+    attributes: Dict = field(default_factory=dict)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class BibEdge:
+    """Edge in a bibliometric network"""
+    source: str = ""
+    target: str = ""
+    weight: float = 1.0
+    edge_type: str = ""  # cocitation, coupling, cooccurrence
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class BibliometricMap:
+    """Bibliometric network map"""
+    query: str = ""
+    map_type: str = ""  # cocitation, coupling, keyword
+    total_papers: int = 0
+    nodes: List[BibNode] = field(default_factory=list)
+    edges: List[BibEdge] = field(default_factory=list)
+    clusters: int = 0
+    density: float = 0.0
+
+    def to_dict(self) -> Dict:
+        return {
+            'query': self.query,
+            'map_type': self.map_type,
+            'total_papers': self.total_papers,
+            'nodes': [n.to_dict() for n in self.nodes],
+            'edges': [e.to_dict() for e in self.edges],
+            'clusters': self.clusters,
+            'density': self.density,
+            'stats': {
+                'node_count': len(self.nodes),
+                'edge_count': len(self.edges),
+            },
+        }
