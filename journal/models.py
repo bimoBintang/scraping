@@ -470,3 +470,52 @@ class LiteratureReview:
             'conclusion': self.conclusion,
             'bibliography': self.bibliography,
         }
+
+
+# ==================== J11: CROSS-REFERENCE VALIDATOR MODELS ====================
+
+@dataclass
+class ValidationIssue:
+    """A single validation issue"""
+    issue_type: str = ""       # missing_ref, orphan_entry, format_issue, year_mismatch, duplicate
+    severity: str = "warning"  # error, warning, info
+    description: str = ""
+    location: str = ""         # e.g. "line 42" or "citation #3"
+    citation_text: str = ""
+    suggestion: str = ""
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class ValidationReport:
+    """Full cross-reference validation report"""
+    total_citations: int = 0
+    total_bib_entries: int = 0
+    matched: int = 0
+    issues: List[ValidationIssue] = field(default_factory=list)
+
+    # Counts by type
+    missing_refs: int = 0
+    orphan_entries: int = 0
+    format_issues: int = 0
+    year_mismatches: int = 0
+    duplicates: int = 0
+
+    # Score
+    accuracy_score: float = 0.0  # 0.0–1.0
+
+    def to_dict(self) -> Dict:
+        return {
+            'total_citations': self.total_citations,
+            'total_bib_entries': self.total_bib_entries,
+            'matched': self.matched,
+            'issues': [i.to_dict() for i in self.issues],
+            'missing_refs': self.missing_refs,
+            'orphan_entries': self.orphan_entries,
+            'format_issues': self.format_issues,
+            'year_mismatches': self.year_mismatches,
+            'duplicates': self.duplicates,
+            'accuracy_score': round(self.accuracy_score, 3),
+        }

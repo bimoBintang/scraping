@@ -30,6 +30,7 @@ Examples:
   python main.py journal rank "Nature" --years 2020-2025
   python main.py journal rank --compare "Nature,Science,IEEE" --year 2025
   python main.py journal review "transformer attention" --count 30 --export markdown
+  python main.py journal validate paper.txt --bibliography refs.txt --export json
         """,
     )
 
@@ -153,6 +154,17 @@ Examples:
                        help='Export format')
     rev_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── VALIDATE (J11) ──
+    val_p = sub.add_parser('validate', help='Cross-reference validator (Algorithm J11)')
+    val_p.add_argument('file', type=str, help='Paper text file to validate')
+    val_p.add_argument('--bibliography', type=str,
+                       help='Separate bibliography file (auto-split if omitted)')
+    val_p.add_argument('--verify-doi', action='store_true',
+                       help='Verify DOIs via CrossRef')
+    val_p.add_argument('--export', type=str, choices=['json'],
+                       help='Export format')
+    val_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -165,10 +177,11 @@ def run(args):
     from .frontier_detector import ResearchFrontierDetector
     from .journal_ranker import JournalMetricsCalculator, JournalRankPredictor
     from .review_generator import LiteratureReviewGenerator
+    from .reference_validator import CrossReferenceValidator
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -442,6 +455,33 @@ def run(args):
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(review.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")
+
+    # ==================== VALIDATE (J11) ====================
+    elif args.command == 'validate':
+        filepath = Path(args.file)
+        if not filepath.exists():
+            print(f"  [!] File not found: {filepath}")
+            return
+
+        paper_text = filepath.read_text(encoding='utf-8')
+        bib_text = None
+        if args.bibliography:
+            bib_path = Path(args.bibliography)
+            if bib_path.exists():
+                bib_text = bib_path.read_text(encoding='utf-8')
+
+        validator = CrossReferenceValidator()
+        report = validator.validate(
+            paper_text=paper_text,
+            bibliography_text=bib_text,
+            verify_doi=args.verify_doi,
+        )
+
+        if args.export == 'json':
+            out = Path(args.output) / f"validation_{filepath.stem}.json"
+            with open(out, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {out}")
 
     else:
         print(f"  [!] Unknown command: {args.command}")

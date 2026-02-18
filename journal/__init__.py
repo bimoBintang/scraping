@@ -6,17 +6,18 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   - Semantic Scholar (214M, AI-powered)
   - CrossRef (DOI resolver)
 
-10 Algorithms:
-  J1: Federated Search   — multi-source parallel search
-  J2: Citation Crawler    — BFS citation graph traversal
-  J3: Trend Analyzer      — research trend time-series
-  J4: Paper Recommender   — similarity-based recommendations
-  J5: Bulk Harvester      — cursor-based streaming harvest
-  J6: Author Network      — disambiguation + collaboration graph
-  J7: Citation Intent     — citation sentiment & impact analysis
-  J8: Frontier Detector   — emerging research frontier detection
-  J9: Journal Ranker      — journal impact metrics & prediction
-  J10: Review Generator   — auto literature review generation
+11 Algorithms:
+  J1:  Federated Search   — multi-source parallel search
+  J2:  Citation Crawler    — BFS citation graph traversal
+  J3:  Trend Analyzer      — research trend time-series
+  J4:  Paper Recommender   — similarity-based recommendations
+  J5:  Bulk Harvester      — cursor-based streaming harvest
+  J6:  Author Network      — disambiguation + collaboration graph
+  J7:  Citation Intent     — citation sentiment & impact analysis
+  J8:  Frontier Detector   — emerging research frontier detection
+  J9:  Journal Ranker      — journal impact metrics & prediction
+  J10: Review Generator    — auto literature review generation
+  J11: Reference Validator — cross-reference accuracy checking
 """
 
 from .models import (
@@ -37,6 +38,8 @@ from .models import (
     JournalRankReport,
     ReviewSection,
     LiteratureReview,
+    ValidationIssue,
+    ValidationReport,
 )
 
 from .api_client import (
@@ -79,9 +82,16 @@ from .review_generator import (
     LiteratureReviewGenerator,
 )
 
+from .reference_validator import (
+    CitationExtractor,
+    BibliographyParser,
+    FuzzyMatcher,
+    CrossReferenceValidator,
+)
+
 from .exporter import JournalExporter
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 __all__ = [
     # Models
     'Paper', 'Author', 'CitationEdge',
@@ -91,6 +101,7 @@ __all__ = [
     'FrontierTopic', 'FrontierReport',
     'JournalMetrics', 'JournalRankReport',
     'ReviewSection', 'LiteratureReview',
+    'ValidationIssue', 'ValidationReport',
     # API Clients
     'OpenAlexClient', 'SemanticScholarClient', 'CrossRefClient',
     # Algorithms
@@ -102,6 +113,8 @@ __all__ = [
     'JournalMetricsCalculator', 'JournalRankPredictor',
     'SentenceExtractor', 'ThematicClusterer',
     'GapDetector', 'LiteratureReviewGenerator',
+    'CitationExtractor', 'BibliographyParser',
+    'FuzzyMatcher', 'CrossReferenceValidator',
     # Exporter
     'JournalExporter',
 ]
