@@ -25,6 +25,7 @@ Examples:
   python main.py journal recommend 10.1038/s41586-021-03819-2 --count 15
   python main.py journal harvest --topic "computer vision" --year 2025 --count 500
   python main.py journal author "Geoffrey Hinton" --network --count 50
+  python main.py journal intent 10.1038/s41586-021-03819-2 --count 100
         """,
     )
 
@@ -103,6 +104,15 @@ Examples:
                           help='Export format')
     author_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── INTENT (J7) ──
+    intent_p = sub.add_parser('intent', help='Citation intent & sentiment analysis (Algorithm J7)')
+    intent_p.add_argument('doi', type=str, help='Paper DOI or Semantic Scholar ID')
+    intent_p.add_argument('--count', type=int, default=100,
+                          help='Max citations to analyze (default: 100)')
+    intent_p.add_argument('--export', type=str, choices=['json'],
+                          help='Export format')
+    intent_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -111,10 +121,11 @@ def run(args):
     from .api_client import OpenAlexClient, SemanticScholarClient, CrossRefClient
     from .search_engine import FederatedSearch, CitationCrawler, TrendAnalyzer, PaperRecommender
     from .author_network import AuthorDisambiguator, CollaborationNetwork
+    from .citation_analyzer import CitationClassifier, CitationImpactAnalyzer
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -313,6 +324,20 @@ def run(args):
                 with open(filepath, 'w', encoding='utf-8') as f:
                     json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
                 print(f"  [✓] Exported → {filepath}")
+
+    # ==================== CITATION INTENT (J7) ====================
+    elif args.command == 'intent':
+        analyzer = CitationImpactAnalyzer()
+        report = analyzer.analyze(
+            doi_or_id=args.doi,
+            limit=args.count,
+        )
+
+        if args.export == 'json' and report.analyzed_citations > 0:
+            filepath = Path(args.output) / f"intent_{args.doi.replace('/', '_')[:30]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
 
     else:
         print(f"  [!] Unknown command: {args.command}")

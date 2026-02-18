@@ -250,3 +250,63 @@ class NetworkReport:
             'communities': self.communities,
         }
 
+
+# ==================== J7: CITATION INTENT MODELS ====================
+
+@dataclass
+class CitationContext:
+    """A single citation context with classified intent and sentiment"""
+    text: str
+    intent: str = "background"         # background, methodology, extension, comparison, support, contrast
+    sentiment: str = "neutral"         # positive, negative, neutral
+    confidence: float = 0.0
+    citing_paper_title: str = ""
+    citing_paper_doi: str = ""
+    citing_paper_year: int = 0
+    is_influential: bool = False
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class CitationImpactReport:
+    """Aggregate citation impact analysis for a paper"""
+    paper_title: str = ""
+    paper_doi: str = ""
+    total_citations: int = 0
+    analyzed_citations: int = 0
+
+    # Sentiment counts
+    positive_count: int = 0
+    negative_count: int = 0
+    neutral_count: int = 0
+
+    # Intent breakdown
+    intent_breakdown: Dict[str, int] = field(default_factory=dict)
+
+    # Impact quality score (0.0 – 1.0)
+    quality_score: float = 0.0
+    influential_count: int = 0
+
+    # Context details
+    contexts: List[CitationContext] = field(default_factory=list)
+    top_supporters: List[str] = field(default_factory=list)
+    top_critics: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            'paper_title': self.paper_title,
+            'paper_doi': self.paper_doi,
+            'total_citations': self.total_citations,
+            'analyzed_citations': self.analyzed_citations,
+            'positive_count': self.positive_count,
+            'negative_count': self.negative_count,
+            'neutral_count': self.neutral_count,
+            'intent_breakdown': self.intent_breakdown,
+            'quality_score': round(self.quality_score, 3),
+            'influential_count': self.influential_count,
+            'contexts': [c.to_dict() for c in self.contexts],
+            'top_supporters': self.top_supporters,
+            'top_critics': self.top_critics,
+        }

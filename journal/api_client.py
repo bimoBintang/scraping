@@ -464,6 +464,35 @@ class SemanticScholarClient:
                 papers.append(self._parse_paper(ref))
         return papers
 
+    def get_citation_contexts(self, paper_id: str, limit: int = 100) -> List[Dict]:
+        """
+        Get citation contexts — the actual text snippets where papers cite this work.
+
+        Returns list of dicts with keys:
+          - citing_paper: Paper object
+          - contexts: list of citation text snippets
+          - intents: list of S2 intent labels (e.g. 'methodology', 'background')
+          - is_influential: bool
+        """
+        params = {
+            'fields': 'title,year,citationCount,authors,externalIds,journal,'
+                       'contexts,intents,isInfluential',
+            'limit': min(limit, 1000),
+        }
+        data = self._request(f'paper/{paper_id}/citations', params)
+        results = []
+        for item in data.get('data', []):
+            citing = item.get('citingPaper', {})
+            if not citing or not citing.get('title'):
+                continue
+            results.append({
+                'citing_paper': self._parse_paper(citing),
+                'contexts': item.get('contexts', []) or [],
+                'intents': item.get('intents', []) or [],
+                'is_influential': item.get('isInfluential', False),
+            })
+        return results
+
     def get_recommendations(self, paper_id: str, limit: int = 20) -> List[Paper]:
         """Get recommended similar papers"""
         try:
