@@ -27,6 +27,8 @@ Examples:
   python main.py journal author "Geoffrey Hinton" --network --count 50
   python main.py journal intent 10.1038/s41586-021-03819-2 --count 100
   python main.py journal frontier "machine learning" --topics 10 --years 2020-2026
+  python main.py journal rank "Nature" --years 2020-2025
+  python main.py journal rank --compare "Nature,Science,IEEE" --year 2025
         """,
     )
 
@@ -125,6 +127,19 @@ Examples:
                          help='Export format')
     front_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── RANK (J9) ──
+    rank_p = sub.add_parser('rank', help='Journal impact ranking & prediction (Algorithm J9)')
+    rank_p.add_argument('journal', type=str, nargs='?', help='Journal name to analyze')
+    rank_p.add_argument('--compare', type=str,
+                        help='Comma-separated journal names to compare')
+    rank_p.add_argument('--years', type=str, default='2020-2025',
+                        help='Year range for analysis (default: 2020-2025)')
+    rank_p.add_argument('--year', type=int, default=2025,
+                        help='Reference year for comparison (default: 2025)')
+    rank_p.add_argument('--export', type=str, choices=['json'],
+                        help='Export format')
+    rank_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -135,10 +150,11 @@ def run(args):
     from .author_network import AuthorDisambiguator, CollaborationNetwork
     from .citation_analyzer import CitationClassifier, CitationImpactAnalyzer
     from .frontier_detector import ResearchFrontierDetector
+    from .journal_ranker import JournalMetricsCalculator, JournalRankPredictor
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -368,6 +384,29 @@ def run(args):
 
         if args.export == 'json' and report.frontiers:
             filepath = Path(args.output) / f"frontier_{args.query.replace(' ', '_')[:20]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== RANK (J9) ====================
+    elif args.command == 'rank':
+        predictor = JournalRankPredictor()
+
+        if args.compare:
+            journals = [j.strip() for j in args.compare.split(',')]
+            report = predictor.compare(journals, year=args.year)
+        elif args.journal:
+            years = args.years.split('-')
+            start_year = int(years[0])
+            end_year = int(years[1]) if len(years) > 1 else start_year
+            report = predictor.analyze(args.journal, start_year, end_year)
+        else:
+            print("  [!] Specify a journal name or use --compare")
+            return
+
+        if args.export == 'json':
+            name = (args.journal or 'comparison').replace(' ', '_')[:20]
+            filepath = Path(args.output) / f"rank_{name}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")

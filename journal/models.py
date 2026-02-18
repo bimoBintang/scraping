@@ -358,3 +358,66 @@ class FrontierReport:
             'keyword_clusters': self.keyword_clusters,
             'top_emerging': self.top_emerging,
         }
+
+
+# ==================== J9: JOURNAL RANKING MODELS ====================
+
+@dataclass
+class JournalMetrics:
+    """Computed metrics for a single journal"""
+    journal_name: str = ""
+    issn: str = ""
+    year: int = 0
+
+    # Core metrics
+    impact_factor: float = 0.0        # mean citations (2-year window)
+    median_citations: float = 0.0     # median (robust)
+    h5_index: int = 0                 # h-index for last 5 years
+    total_papers: int = 0
+    total_citations: int = 0
+
+    # Distribution metrics
+    gini_coefficient: float = 0.0     # citation inequality (0–1)
+    top10_share: float = 0.0          # % citations from top 10% papers
+    immediacy_index: float = 0.0      # same-year citation rate
+    self_citation_rate: float = 0.0   # % self-citations
+
+    # Percentiles
+    p25: float = 0.0
+    p50: float = 0.0
+    p75: float = 0.0
+    p90: float = 0.0
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class JournalRankReport:
+    """Full journal ranking & prediction report"""
+    journal_name: str = ""
+    year_range: str = ""
+    current_metrics: Optional[JournalMetrics] = None
+    yearly_metrics: List[JournalMetrics] = field(default_factory=list)
+
+    # Trajectory prediction
+    predicted_impact: float = 0.0
+    trajectory: str = "stable"         # rising, stable, declining
+    rank_score: float = 0.0            # composite 0.0–1.0
+
+    # Comparison
+    compared_journals: List[JournalMetrics] = field(default_factory=list)
+    recommendation: str = ""
+
+    def to_dict(self) -> Dict:
+        return {
+            'journal_name': self.journal_name,
+            'year_range': self.year_range,
+            'current_metrics': self.current_metrics.to_dict() if self.current_metrics else None,
+            'yearly_metrics': [m.to_dict() for m in self.yearly_metrics],
+            'predicted_impact': round(self.predicted_impact, 3),
+            'trajectory': self.trajectory,
+            'rank_score': round(self.rank_score, 3),
+            'compared_journals': [j.to_dict() for j in self.compared_journals],
+            'recommendation': self.recommendation,
+        }
