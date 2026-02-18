@@ -6,7 +6,7 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   - Semantic Scholar (214M, AI-powered)
   - CrossRef (DOI resolver)
 
-18 Algorithms:
+18 Algorithms + 5 Integration Pipelines:
   J1:  Federated Search   — multi-source parallel search
   J2:  Citation Crawler    — BFS citation graph traversal
   J3:  Trend Analyzer      — research trend time-series
@@ -25,6 +25,13 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   J16: Bibliometric Map    — bibliometric mapping & visualization
   J17: Plagiarism Detector — plagiarism pattern detection
   J18: Reviewer Matcher    — reviewer matching system
+
+  Pipelines:
+    discovery  — J1 → J8 + J15
+    citation   — J2 → J6 + J7
+    forecast   — J3 → J8 + J14
+    recommend  — J4 → J10 + J18
+    bulk       — J5 → J13 + J16
 """
 
 from .models import (
@@ -63,6 +70,7 @@ from .models import (
     PlagiarismReport,
     ReviewerCandidate,
     ReviewerMatchReport,
+    PipelineReport,
 )
 
 from .api_client import (
@@ -161,9 +169,13 @@ from .reviewer_matcher import (
     ReviewerMatcher,
 )
 
+from .pipeline import (
+    PipelineOrchestrator,
+)
+
 from .exporter import JournalExporter
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 __all__ = [
     # Models
     'Paper', 'Author', 'CitationEdge',
@@ -181,6 +193,7 @@ __all__ = [
     'BibNode', 'BibEdge', 'BibliometricMap',
     'PlagiarismFlag', 'PlagiarismReport',
     'ReviewerCandidate', 'ReviewerMatchReport',
+    'PipelineReport',
     # API Clients
     'OpenAlexClient', 'SemanticScholarClient', 'CrossRefClient',
     # Algorithms
@@ -210,6 +223,7 @@ __all__ = [
     'TfIdfEngine', 'ExpertiseMatcher',
     'ConflictDetector', 'ReviewerRanker',
     'ReviewerMatcher',
+    'PipelineOrchestrator',
     # Exporter
     'JournalExporter',
 ]

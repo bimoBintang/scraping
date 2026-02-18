@@ -38,6 +38,8 @@ Examples:
   python main.py journal bibmap "deep learning" --type keyword --count 50 --export gexf
   python main.py journal plagiarism --doi 10.1038/s41586-021-03819-2 --export json
   python main.py journal reviewer "deep learning medical imaging" --count 10 --export json
+  python main.py journal pipeline discovery "deep learning" --count 30
+  python main.py journal pipeline bulk "climate change" --count 100 --export json
         """,
     )
 
@@ -244,6 +246,21 @@ Examples:
                        help='Export format')
     rev_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── PIPELINE (Integration) ──
+    pipe_p = sub.add_parser('pipeline', help='Combined algorithm pipelines (Integration)')
+    pipe_p.add_argument('pipeline_name', type=str,
+                        choices=['discovery', 'citation', 'forecast', 'recommend', 'bulk'],
+                        help='Pipeline: discovery, citation, forecast, recommend, bulk')
+    pipe_p.add_argument('query', type=str, nargs='?', default='',
+                        help='Search query or DOI')
+    pipe_p.add_argument('--count', type=int, default=30,
+                        help='Number of papers (default: 30)')
+    pipe_p.add_argument('--years', type=str, default='',
+                        help='Year range, e.g. 2020-2026 (for forecast)')
+    pipe_p.add_argument('--export', type=str, choices=['json'],
+                        help='Export format')
+    pipe_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -264,10 +281,11 @@ def run(args):
     from .bibliometric_map import BibliometricMapper, NetworkExporter
     from .plagiarism_detector import PlagiarismDetector
     from .reviewer_matcher import ReviewerMatcher
+    from .pipeline import PipelineOrchestrator
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev, bibmap, plagiarism, reviewer")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev, bibmap, plagiarism, reviewer, pipeline")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -687,6 +705,24 @@ def run(args):
         if args.export == 'json' and report.candidates:
             slug = args.query.replace(' ', '_')[:20]
             filepath = Path(args.output) / f"reviewer_{slug}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== PIPELINE (Integration) ====================
+    elif args.command == 'pipeline':
+        orchestrator = PipelineOrchestrator()
+        report = orchestrator.run(
+            pipeline_name=args.pipeline_name,
+            query=args.query,
+            doi=args.query,  # query doubles as DOI for citation/recommend
+            n_papers=args.count,
+            years=args.years,
+        )
+
+        if args.export == 'json' and report.stages_completed:
+            slug = args.query.replace(' ', '_').replace('/', '_')[:20]
+            filepath = Path(args.output) / f"pipeline_{args.pipeline_name}_{slug}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")

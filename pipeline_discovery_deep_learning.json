@@ -1,0 +1,34 @@
+{
+  "pipeline_name": "discovery",
+  "query": "deep learning",
+  "stages_completed": [
+    "J1:FederatedSearch",
+    "J8:FrontierDetector",
+    "J15:SystematicReview"
+  ],
+  "results": {
+    "search": {
+      "total_found": 25,
+      "sources": [
+        "semantic_scholar",
+        "crossref",
+        "openalex"
+      ]
+    },
+    "frontier": {
+      "topics_found": 10,
+      "top_topics": [
+        "artificial intelligence",
+        "computer science",
+        "convolutional neural network"
+      ]
+    },
+    "sysrev": {
+      "total_found": 30,
+      "included": 0,
+      "excluded": 27
+    }
+  },
+  "total_papers": 25,
+  "elapsed_seconds": 41.8
+}

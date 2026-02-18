@@ -900,3 +900,26 @@ class ReviewerMatchReport:
             'total_candidates_screened': self.total_candidates_screened,
             'conflicts_found': self.conflicts_found,
         }
+
+
+# ==================== PIPELINE INTEGRATION MODELS ====================
+
+@dataclass
+class PipelineReport:
+    """Combined pipeline analysis report"""
+    pipeline_name: str = ""
+    query: str = ""
+    stages_completed: List[str] = field(default_factory=list)
+    results: Dict = field(default_factory=dict)
+    total_papers: int = 0
+    elapsed_seconds: float = 0.0
+
+    def to_dict(self) -> Dict:
+        return {
+            'pipeline_name': self.pipeline_name,
+            'query': self.query,
+            'stages_completed': self.stages_completed,
+            'results': self.results,
+            'total_papers': self.total_papers,
+            'elapsed_seconds': round(self.elapsed_seconds, 2),
+        }
