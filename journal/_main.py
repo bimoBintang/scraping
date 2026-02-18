@@ -33,6 +33,7 @@ Examples:
   python main.py journal validate paper.txt --bibliography refs.txt --export json
   python main.py journal funding "deep learning" --count 50 --export json
   python main.py journal oa 10.1038/s41586-021-03819-2 --funder nsf --export json
+  python main.py journal forecast 10.1038/s41586-021-03819-2 --export json
         """,
     )
 
@@ -186,6 +187,13 @@ Examples:
                       help='Export format')
     oa_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── FORECAST (J14) ──
+    fore_p = sub.add_parser('forecast', help='Research impact forecaster (Algorithm J14)')
+    fore_p.add_argument('doi', type=str, help='DOI to forecast')
+    fore_p.add_argument('--export', type=str, choices=['json'],
+                        help='Export format')
+    fore_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -201,10 +209,11 @@ def run(args):
     from .reference_validator import CrossReferenceValidator
     from .funding_tracker import FunderAnalyzer
     from .oa_checker import OAComplianceChecker
+    from .impact_forecaster import ResearchImpactForecaster
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -532,6 +541,17 @@ def run(args):
             filepath = Path(args.output) / f"oa_{args.doi.replace('/', '_')[:30]}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== FORECAST (J14) ====================
+    elif args.command == 'forecast':
+        forecaster = ResearchImpactForecaster()
+        forecast = forecaster.forecast(doi=args.doi)
+
+        if args.export == 'json':
+            filepath = Path(args.output) / f"forecast_{args.doi.replace('/', '_')[:30]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(forecast.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")
 
     else:

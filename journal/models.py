@@ -606,3 +606,98 @@ class ComplianceReport:
             'recommendations': self.recommendations,
             'recommended_repos': self.recommended_repos,
         }
+
+
+# ==================== J14: IMPACT FORECASTER MODELS ====================
+
+@dataclass
+class PaperFeatures:
+    """Computed features for impact prediction"""
+    # Author features
+    author_h_index: float = 0.0
+    author_total_papers: int = 0
+    author_total_citations: int = 0
+    author_career_years: int = 0
+    author_max_single_cites: int = 0
+    author_collab_diversity: float = 0.0
+    author_count: int = 0
+    is_first_author_senior: bool = False
+
+    # Journal features
+    journal_impact_factor: float = 0.0
+    journal_h5_index: int = 0
+    journal_citation_median: float = 0.0
+    journal_is_oa: bool = False
+    journal_quartile: int = 4  # 1=Q1, 4=Q4
+    journal_age_years: int = 0
+
+    # Paper features
+    reference_count: int = 0
+    abstract_length: int = 0
+    title_word_count: int = 0
+    keyword_count: int = 0
+    has_methodology: bool = False
+    has_data_availability: bool = False
+    has_code_availability: bool = False
+    international_collab: bool = False
+    title_novelty_score: float = 0.0
+    abstract_readability: float = 0.0
+
+    # Network features
+    cross_field_refs: float = 0.0
+    self_citation_ratio: float = 0.0
+    coauthor_network_size: int = 0
+    citation_diversity: float = 0.0
+
+    # Early signals
+    early_citations: int = 0
+    early_downloads: int = 0
+    social_mentions: int = 0
+    altmetric_score: float = 0.0
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class ImpactForecast:
+    """Impact prediction result"""
+    doi: str = ""
+    title: str = ""
+    predicted_percentile: float = 0.0   # 0-100
+    confidence: float = 0.0             # 0-1
+    predicted_citations_5y: int = 0
+    impact_class: str = ""              # exceptional, high, above_avg, average, below_avg
+
+    # Score breakdown
+    author_score: float = 0.0
+    journal_score: float = 0.0
+    paper_score: float = 0.0
+    network_score: float = 0.0
+    early_score: float = 0.0
+    total_score: float = 0.0
+
+    features: Optional[PaperFeatures] = None
+    strengths: List[str] = field(default_factory=list)
+    weaknesses: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            'doi': self.doi,
+            'title': self.title,
+            'predicted_percentile': round(self.predicted_percentile, 1),
+            'confidence': round(self.confidence, 3),
+            'predicted_citations_5y': self.predicted_citations_5y,
+            'impact_class': self.impact_class,
+            'score_breakdown': {
+                'author': round(self.author_score, 3),
+                'journal': round(self.journal_score, 3),
+                'paper': round(self.paper_score, 3),
+                'network': round(self.network_score, 3),
+                'early': round(self.early_score, 3),
+                'total': round(self.total_score, 3),
+            },
+            'features': self.features.to_dict() if self.features else None,
+            'strengths': self.strengths,
+            'weaknesses': self.weaknesses,
+        }
