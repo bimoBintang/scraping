@@ -6,7 +6,7 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   - Semantic Scholar (214M, AI-powered)
   - CrossRef (DOI resolver)
 
-17 Algorithms:
+18 Algorithms:
   J1:  Federated Search   — multi-source parallel search
   J2:  Citation Crawler    — BFS citation graph traversal
   J3:  Trend Analyzer      — research trend time-series
@@ -24,6 +24,7 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   J15: Systematic Review   — systematic review assistant
   J16: Bibliometric Map    — bibliometric mapping & visualization
   J17: Plagiarism Detector — plagiarism pattern detection
+  J18: Reviewer Matcher    — reviewer matching system
 """
 
 from .models import (
@@ -60,6 +61,8 @@ from .models import (
     BibliometricMap,
     PlagiarismFlag,
     PlagiarismReport,
+    ReviewerCandidate,
+    ReviewerMatchReport,
 )
 
 from .api_client import (
@@ -150,9 +153,17 @@ from .plagiarism_detector import (
     PlagiarismDetector,
 )
 
+from .reviewer_matcher import (
+    TfIdfEngine,
+    ExpertiseMatcher,
+    ConflictDetector,
+    ReviewerRanker,
+    ReviewerMatcher,
+)
+
 from .exporter import JournalExporter
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 __all__ = [
     # Models
     'Paper', 'Author', 'CitationEdge',
@@ -169,6 +180,7 @@ __all__ = [
     'ScreeningResult', 'BiasAssessment', 'SystematicReviewReport',
     'BibNode', 'BibEdge', 'BibliometricMap',
     'PlagiarismFlag', 'PlagiarismReport',
+    'ReviewerCandidate', 'ReviewerMatchReport',
     # API Clients
     'OpenAlexClient', 'SemanticScholarClient', 'CrossRefClient',
     # Algorithms
@@ -195,6 +207,9 @@ __all__ = [
     'BibliometricMapper',
     'CitationPatternAnalyzer', 'TextSimilarityChecker',
     'SelfCitationDetector', 'PlagiarismDetector',
+    'TfIdfEngine', 'ExpertiseMatcher',
+    'ConflictDetector', 'ReviewerRanker',
+    'ReviewerMatcher',
     # Exporter
     'JournalExporter',
 ]

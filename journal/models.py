@@ -860,3 +860,43 @@ class PlagiarismReport:
             'citation_anomaly_score': round(self.citation_anomaly_score, 1),
             'recommendations': self.recommendations,
         }
+
+
+# ==================== J18: REVIEWER MATCHING MODELS ====================
+
+@dataclass
+class ReviewerCandidate:
+    """A potential reviewer candidate"""
+    name: str = ""
+    affiliation: str = ""
+    expertise_score: float = 0.0
+    total_score: float = 0.0
+    h_index: int = 0
+    paper_count: int = 0
+    recent_papers: int = 0
+    matching_keywords: List[str] = field(default_factory=list)
+    conflicts: List[str] = field(default_factory=list)
+    has_conflict: bool = False
+    justification: str = ""
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class ReviewerMatchReport:
+    """Reviewer matching report"""
+    manuscript_title: str = ""
+    manuscript_keywords: List[str] = field(default_factory=list)
+    candidates: List[ReviewerCandidate] = field(default_factory=list)
+    total_candidates_screened: int = 0
+    conflicts_found: int = 0
+
+    def to_dict(self) -> Dict:
+        return {
+            'manuscript_title': self.manuscript_title,
+            'manuscript_keywords': self.manuscript_keywords,
+            'candidates': [c.to_dict() for c in self.candidates],
+            'total_candidates_screened': self.total_candidates_screened,
+            'conflicts_found': self.conflicts_found,
+        }

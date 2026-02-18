@@ -37,6 +37,7 @@ Examples:
   python main.py journal sysrev "COVID-19 vaccine" --count 100 --include "RCT,clinical" --export json
   python main.py journal bibmap "deep learning" --type keyword --count 50 --export gexf
   python main.py journal plagiarism --doi 10.1038/s41586-021-03819-2 --export json
+  python main.py journal reviewer "deep learning medical imaging" --count 10 --export json
         """,
     )
 
@@ -232,6 +233,17 @@ Examples:
                         help='Export format')
     plag_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── REVIEWER (J18) ──
+    rev_p = sub.add_parser('reviewer', help='Reviewer matching system (Algorithm J18)')
+    rev_p.add_argument('query', type=str, help='Manuscript abstract or topic')
+    rev_p.add_argument('--count', type=int, default=10,
+                       help='Number of reviewer candidates (default: 10)')
+    rev_p.add_argument('--authors', type=str, default='',
+                       help='Manuscript authors, comma-separated (for COI)')
+    rev_p.add_argument('--export', type=str, choices=['json'],
+                       help='Export format')
+    rev_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -251,10 +263,11 @@ def run(args):
     from .systematic_review import SystematicReviewAssistant
     from .bibliometric_map import BibliometricMapper, NetworkExporter
     from .plagiarism_detector import PlagiarismDetector
+    from .reviewer_matcher import ReviewerMatcher
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev, bibmap, plagiarism")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev, bibmap, plagiarism, reviewer")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -656,6 +669,24 @@ def run(args):
         if args.export == 'json':
             slug = (args.doi or args.text[:20]).replace('/', '_').replace(' ', '_')[:30]
             filepath = Path(args.output) / f"plagiarism_{slug}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== REVIEWER (J18) ====================
+    elif args.command == 'reviewer':
+        ms_authors = [a.strip() for a in args.authors.split(',') if a.strip()] if args.authors else None
+
+        matcher = ReviewerMatcher()
+        report = matcher.match(
+            manuscript_text=args.query,
+            manuscript_authors=ms_authors,
+            n_candidates=args.count,
+        )
+
+        if args.export == 'json' and report.candidates:
+            slug = args.query.replace(' ', '_')[:20]
+            filepath = Path(args.output) / f"reviewer_{slug}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")
