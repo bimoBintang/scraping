@@ -32,6 +32,7 @@ Examples:
   python main.py journal review "transformer attention" --count 30 --export markdown
   python main.py journal validate paper.txt --bibliography refs.txt --export json
   python main.py journal funding "deep learning" --count 50 --export json
+  python main.py journal oa 10.1038/s41586-021-03819-2 --funder nsf --export json
         """,
     )
 
@@ -175,6 +176,16 @@ Examples:
                         help='Export format')
     fund_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── OA (J13) ──
+    oa_p = sub.add_parser('oa', help='Open Access compliance checker (Algorithm J13)')
+    oa_p.add_argument('doi', type=str, help='DOI to check')
+    oa_p.add_argument('--funder', type=str, default='',
+                      choices=['', 'plan_s', 'nsf', 'nih', 'erc', 'ukri', 'gates', 'wellcome', 'dfg', 'anr'],
+                      help='Funder mandate to check against')
+    oa_p.add_argument('--export', type=str, choices=['json'],
+                      help='Export format')
+    oa_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -189,10 +200,11 @@ def run(args):
     from .review_generator import LiteratureReviewGenerator
     from .reference_validator import CrossReferenceValidator
     from .funding_tracker import FunderAnalyzer
+    from .oa_checker import OAComplianceChecker
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -504,6 +516,20 @@ def run(args):
 
         if args.export == 'json' and report.total_papers > 0:
             filepath = Path(args.output) / f"funding_{args.query.replace(' ', '_')[:20]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== OA (J13) ====================
+    elif args.command == 'oa':
+        checker = OAComplianceChecker()
+        report = checker.check(
+            doi=args.doi,
+            funder=args.funder,
+        )
+
+        if args.export == 'json':
+            filepath = Path(args.output) / f"oa_{args.doi.replace('/', '_')[:30]}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")

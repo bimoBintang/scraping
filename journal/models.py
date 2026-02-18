@@ -561,3 +561,48 @@ class FundingReport:
             'yearly_distribution': self.yearly_distribution,
             'funder_roi': self.funder_roi,
         }
+
+
+# ==================== J13: OA COMPLIANCE MODELS ====================
+
+@dataclass
+class OAStatus:
+    """Open Access status of a paper"""
+    doi: str = ""
+    status: str = "closed"  # gold, green, hybrid, bronze, closed
+    license: str = ""
+    oa_url: str = ""
+    host_type: str = ""     # publisher, repository
+    journal: str = ""
+    is_oa: bool = False
+    embargo_months: int = 0
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class ComplianceReport:
+    """OA compliance check report"""
+    doi: str = ""
+    title: str = ""
+    oa_status: Optional[OAStatus] = None
+    funder: str = ""
+    mandate: str = ""
+    is_compliant: bool = False
+    compliance_details: str = ""
+    recommendations: List[str] = field(default_factory=list)
+    recommended_repos: List[Dict] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            'doi': self.doi,
+            'title': self.title,
+            'oa_status': self.oa_status.to_dict() if self.oa_status else None,
+            'funder': self.funder,
+            'mandate': self.mandate,
+            'is_compliant': self.is_compliant,
+            'compliance_details': self.compliance_details,
+            'recommendations': self.recommendations,
+            'recommended_repos': self.recommended_repos,
+        }
