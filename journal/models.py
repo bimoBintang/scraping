@@ -819,3 +819,44 @@ class BibliometricMap:
                 'edge_count': len(self.edges),
             },
         }
+
+
+# ==================== J17: PLAGIARISM DETECTION MODELS ====================
+
+@dataclass
+class PlagiarismFlag:
+    """A detected plagiarism indicator"""
+    flag_type: str = ""     # missing_citation, irrelevant_citation, self_citation, text_similarity, citation_density, age_anomaly, citation_ring
+    severity: str = "low"   # low, medium, high
+    evidence: str = ""
+    score: float = 0.0
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class PlagiarismReport:
+    """Full plagiarism analysis report"""
+    paper_title: str = ""
+    paper_doi: str = ""
+    suspicion_score: float = 0.0  # 0-100
+    risk_level: str = "low"       # low, medium, high, critical
+    flags: List[PlagiarismFlag] = field(default_factory=list)
+    text_similarity_scores: List[Dict] = field(default_factory=list)
+    self_citation_ratio: float = 0.0
+    citation_anomaly_score: float = 0.0
+    recommendations: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            'paper_title': self.paper_title,
+            'paper_doi': self.paper_doi,
+            'suspicion_score': round(self.suspicion_score, 1),
+            'risk_level': self.risk_level,
+            'flags': [f.to_dict() for f in self.flags],
+            'text_similarity_scores': self.text_similarity_scores,
+            'self_citation_ratio': round(self.self_citation_ratio, 3),
+            'citation_anomaly_score': round(self.citation_anomaly_score, 1),
+            'recommendations': self.recommendations,
+        }

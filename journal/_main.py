@@ -36,6 +36,7 @@ Examples:
   python main.py journal forecast 10.1038/s41586-021-03819-2 --export json
   python main.py journal sysrev "COVID-19 vaccine" --count 100 --include "RCT,clinical" --export json
   python main.py journal bibmap "deep learning" --type keyword --count 50 --export gexf
+  python main.py journal plagiarism --doi 10.1038/s41586-021-03819-2 --export json
         """,
     )
 
@@ -221,6 +222,16 @@ Examples:
                        help='Export format')
     bib_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── PLAGIARISM (J17) ──
+    plag_p = sub.add_parser('plagiarism', help='Plagiarism pattern detection (Algorithm J17)')
+    plag_p.add_argument('text', type=str, nargs='?', default='',
+                        help='Paper text to analyze')
+    plag_p.add_argument('--doi', type=str, default='',
+                        help='DOI to analyze')
+    plag_p.add_argument('--export', type=str, choices=['json'],
+                        help='Export format')
+    plag_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -239,10 +250,11 @@ def run(args):
     from .impact_forecaster import ResearchImpactForecaster
     from .systematic_review import SystematicReviewAssistant
     from .bibliometric_map import BibliometricMapper, NetworkExporter
+    from .plagiarism_detector import PlagiarismDetector
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev, bibmap")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev, bibmap, plagiarism")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -632,6 +644,21 @@ def run(args):
                 with open(epath, 'w') as f:
                     f.write(edges_csv)
                 print(f"  [✓] Exported VOSviewer → {npath}, {epath}")
+
+    # ==================== PLAGIARISM (J17) ====================
+    elif args.command == 'plagiarism':
+        detector = PlagiarismDetector()
+        report = detector.analyze(
+            text=args.text,
+            doi=args.doi,
+        )
+
+        if args.export == 'json':
+            slug = (args.doi or args.text[:20]).replace('/', '_').replace(' ', '_')[:30]
+            filepath = Path(args.output) / f"plagiarism_{slug}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
 
     else:
         print(f"  [!] Unknown command: {args.command}")
