@@ -6,7 +6,7 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   - Semantic Scholar (214M, AI-powered)
   - CrossRef (DOI resolver)
 
-11 Algorithms:
+12 Algorithms:
   J1:  Federated Search   — multi-source parallel search
   J2:  Citation Crawler    — BFS citation graph traversal
   J3:  Trend Analyzer      — research trend time-series
@@ -18,6 +18,7 @@ Scraping jurnal artikel penelitian dari 3 API gratis:
   J9:  Journal Ranker      — journal impact metrics & prediction
   J10: Review Generator    — auto literature review generation
   J11: Reference Validator — cross-reference accuracy checking
+  J12: Funding Tracker     — funding acknowledgment extraction
 """
 
 from .models import (
@@ -40,6 +41,8 @@ from .models import (
     LiteratureReview,
     ValidationIssue,
     ValidationReport,
+    FundingEntry,
+    FundingReport,
 )
 
 from .api_client import (
@@ -89,9 +92,14 @@ from .reference_validator import (
     CrossReferenceValidator,
 )
 
+from .funding_tracker import (
+    FundingExtractor,
+    FunderAnalyzer,
+)
+
 from .exporter import JournalExporter
 
-__version__ = "1.6.0"
+__version__ = "1.7.0"
 __all__ = [
     # Models
     'Paper', 'Author', 'CitationEdge',
@@ -102,6 +110,7 @@ __all__ = [
     'JournalMetrics', 'JournalRankReport',
     'ReviewSection', 'LiteratureReview',
     'ValidationIssue', 'ValidationReport',
+    'FundingEntry', 'FundingReport',
     # API Clients
     'OpenAlexClient', 'SemanticScholarClient', 'CrossRefClient',
     # Algorithms
@@ -115,6 +124,7 @@ __all__ = [
     'GapDetector', 'LiteratureReviewGenerator',
     'CitationExtractor', 'BibliographyParser',
     'FuzzyMatcher', 'CrossReferenceValidator',
+    'FundingExtractor', 'FunderAnalyzer',
     # Exporter
     'JournalExporter',
 ]

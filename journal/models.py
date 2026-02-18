@@ -519,3 +519,45 @@ class ValidationReport:
             'duplicates': self.duplicates,
             'accuracy_score': round(self.accuracy_score, 3),
         }
+
+
+# ==================== J12: FUNDING TRACKER MODELS ====================
+
+@dataclass
+class FundingEntry:
+    """A single funding acknowledgment"""
+    funder: str = ""
+    grant_id: str = ""
+    program: str = ""
+    paper_title: str = ""
+    paper_year: int = 0
+    paper_citations: int = 0
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class FundingReport:
+    """Funding analysis report"""
+    query: str = ""
+    total_papers: int = 0
+    papers_with_funding: int = 0
+    funding_rate: float = 0.0
+
+    entries: List[FundingEntry] = field(default_factory=list)
+    top_funders: List[Dict] = field(default_factory=list)
+    yearly_distribution: Dict[int, int] = field(default_factory=dict)
+    funder_roi: List[Dict] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            'query': self.query,
+            'total_papers': self.total_papers,
+            'papers_with_funding': self.papers_with_funding,
+            'funding_rate': round(self.funding_rate, 3),
+            'entries': [e.to_dict() for e in self.entries],
+            'top_funders': self.top_funders,
+            'yearly_distribution': self.yearly_distribution,
+            'funder_roi': self.funder_roi,
+        }

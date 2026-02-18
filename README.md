@@ -244,17 +244,17 @@ python main.py username --community --max 100 --cookies cookies.json
 
 ```bash
 # Profile scraping
-python instagram_main.py cristiano --save
+python instagram_main.py username --save
 
 # Multiple profiles + compare
-python instagram_main.py cristiano leomessi neymarjr --compare
+python instagram_main.py username leomessi neymarjr --compare
 
 # Posts scraping
-python instagram_main.py cristiano --posts --count 50
+python instagram_main.py username --posts --count 50
 
 # Followers/Following (requires cookies)
-python instagram_main.py cristiano --followers --cookies cookies.json
-python instagram_main.py cristiano --following --cookies cookies.json
+python instagram_main.py username --followers --cookies cookies.json
+python instagram_main.py username --following --cookies cookies.json
 
 # Search users
 python instagram_main.py --search "photography"
@@ -266,37 +266,37 @@ python instagram_main.py user1 user2 user3 --cluster-location
 python instagram_main.py --discover-doc-ids
 
 # Force specific layer
-python instagram_main.py cristiano --layer browser
+python instagram_main.py username --layer browser
 
 # Export
-python instagram_main.py cristiano --posts --export csv
-python instagram_main.py cristiano --export excel
+python instagram_main.py username --posts --export csv
+python instagram_main.py username --export excel
 
 # RL Rate Limiter
-python instagram_main.py cristiano --rl-stats       # Show Q-table stats
-python instagram_main.py cristiano --no-rl           # Disable RL
+python instagram_main.py username --rl-stats       # Show Q-table stats
+python instagram_main.py username --no-rl           # Disable RL
 
 # Account Rotation
-python instagram_main.py cristiano --accounts-dir ./accounts
-python instagram_main.py cristiano --ring-status     # Show hash ring
+python instagram_main.py username --accounts-dir ./accounts
+python instagram_main.py username --ring-status     # Show hash ring
 
 # Predictive Crawling
-python instagram_main.py cristiano --analyze-pattern --count 50
-python instagram_main.py cristiano --analyze-pattern --schedule
+python instagram_main.py username --analyze-pattern --count 50
+python instagram_main.py username --analyze-pattern --schedule
 
 # Proxy Rotation
-python instagram_main.py cristiano --proxy-file proxies.json
-python instagram_main.py cristiano --proxy-status    # Show pool status
-python instagram_main.py cristiano --test-proxies    # Latency test all
+python instagram_main.py username --proxy-file proxies.json
+python instagram_main.py username --proxy-status    # Show pool status
+python instagram_main.py username --test-proxies    # Latency test all
 
 # Story Highlights
-python instagram_main.py cristiano --highlights --cookies cookies.json
-python instagram_main.py cristiano --highlights --save
+python instagram_main.py username --highlights --cookies cookies.json
+python instagram_main.py username --highlights --save
 
 # Selenium/Playwright Engine
-python instagram_main.py cristiano --engine auto        # default
-python instagram_main.py cristiano --engine selenium    # force stealth
-python instagram_main.py cristiano --engine-status      # show engine health
+python instagram_main.py username --engine auto        # default
+python instagram_main.py username --engine selenium    # force stealth
+python instagram_main.py username --engine-status      # show engine health
 ```
 
 ### 📸 Instagram — Python API
@@ -312,18 +312,18 @@ from instagram import (
 
 # Profile scraping (auto tri-layer fallback)
 client = HybridInstagramClient()
-profile = client.get_profile("cristiano")
+profile = client.get_profile("username")
 print(profile)  # Formatted output
 
 # Posts
-posts = client.get_posts("cristiano", count=50)
+posts = client.get_posts("username", count=50)
 
 # With cookies for authenticated features
 client = HybridInstagramClient(cookies_file="cookies.json")
-followers = client.get_followers("cristiano", count=100)
+followers = client.get_followers("username", count=100)
 
 # Story Highlights
-highlights = client.get_highlights("cristiano")
+highlights = client.get_highlights("username")
 
 # Location clustering
 analyzer = LocationClusterAnalyzer(eps_km=50)
@@ -348,7 +348,7 @@ print(doc_ids)  # {"user_posts": "123...", "user_followers": "456...", ...}
 # Export
 exporter = InstagramExporter(output_dir="output")
 exporter.profiles_to_csv(profiles)
-exporter.posts_to_json(posts, username="cristiano")
+exporter.posts_to_json(posts, username="username")
 ```
 
 ### AI Analysis

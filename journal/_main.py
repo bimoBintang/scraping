@@ -31,6 +31,7 @@ Examples:
   python main.py journal rank --compare "Nature,Science,IEEE" --year 2025
   python main.py journal review "transformer attention" --count 30 --export markdown
   python main.py journal validate paper.txt --bibliography refs.txt --export json
+  python main.py journal funding "deep learning" --count 50 --export json
         """,
     )
 
@@ -165,6 +166,15 @@ Examples:
                        help='Export format')
     val_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── FUNDING (J12) ──
+    fund_p = sub.add_parser('funding', help='Funding acknowledgment tracker (Algorithm J12)')
+    fund_p.add_argument('query', type=str, help='Research topic to analyze funding')
+    fund_p.add_argument('--count', type=int, default=50,
+                        help='Number of papers to analyze (default: 50)')
+    fund_p.add_argument('--export', type=str, choices=['json'],
+                        help='Export format')
+    fund_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -178,10 +188,11 @@ def run(args):
     from .journal_ranker import JournalMetricsCalculator, JournalRankPredictor
     from .review_generator import LiteratureReviewGenerator
     from .reference_validator import CrossReferenceValidator
+    from .funding_tracker import FunderAnalyzer
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -482,6 +493,20 @@ def run(args):
             with open(out, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {out}")
+
+    # ==================== FUNDING (J12) ====================
+    elif args.command == 'funding':
+        analyzer = FunderAnalyzer()
+        report = analyzer.analyze(
+            query=args.query,
+            n_papers=args.count,
+        )
+
+        if args.export == 'json' and report.total_papers > 0:
+            filepath = Path(args.output) / f"funding_{args.query.replace(' ', '_')[:20]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
 
     else:
         print(f"  [!] Unknown command: {args.command}")
