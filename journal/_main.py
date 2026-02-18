@@ -34,6 +34,7 @@ Examples:
   python main.py journal funding "deep learning" --count 50 --export json
   python main.py journal oa 10.1038/s41586-021-03819-2 --funder nsf --export json
   python main.py journal forecast 10.1038/s41586-021-03819-2 --export json
+  python main.py journal sysrev "COVID-19 vaccine" --count 100 --include "RCT,clinical" --export json
         """,
     )
 
@@ -194,6 +195,19 @@ Examples:
                         help='Export format')
     fore_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── SYSREV (J15) ──
+    sys_p = sub.add_parser('sysrev', help='Systematic review assistant (Algorithm J15)')
+    sys_p.add_argument('query', type=str, help='Research question')
+    sys_p.add_argument('--count', type=int, default=50,
+                       help='Number of papers to screen (default: 50)')
+    sys_p.add_argument('--include', type=str, default='',
+                       help='Inclusion criteria, comma-separated')
+    sys_p.add_argument('--exclude', type=str, default='',
+                       help='Exclusion criteria, comma-separated')
+    sys_p.add_argument('--export', type=str, choices=['json'],
+                       help='Export format')
+    sys_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -210,10 +224,11 @@ def run(args):
     from .funding_tracker import FunderAnalyzer
     from .oa_checker import OAComplianceChecker
     from .impact_forecaster import ResearchImpactForecaster
+    from .systematic_review import SystematicReviewAssistant
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author, intent, frontier, rank, review, validate, funding, oa, forecast, sysrev")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -552,6 +567,25 @@ def run(args):
             filepath = Path(args.output) / f"forecast_{args.doi.replace('/', '_')[:30]}.json"
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(forecast.to_dict(), f, indent=2, ensure_ascii=False)
+            print(f"  [✓] Exported → {filepath}")
+
+    # ==================== SYSREV (J15) ====================
+    elif args.command == 'sysrev':
+        inclusion = [c.strip() for c in args.include.split(',') if c.strip()] if args.include else None
+        exclusion = [c.strip() for c in args.exclude.split(',') if c.strip()] if args.exclude else None
+
+        assistant = SystematicReviewAssistant()
+        report = assistant.review(
+            query=args.query,
+            n_papers=args.count,
+            inclusion=inclusion,
+            exclusion=exclusion,
+        )
+
+        if args.export == 'json' and report.total_found > 0:
+            filepath = Path(args.output) / f"sysrev_{args.query.replace(' ', '_')[:20]}.json"
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             print(f"  [✓] Exported → {filepath}")
 
     else:

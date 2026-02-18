@@ -701,3 +701,66 @@ class ImpactForecast:
             'strengths': self.strengths,
             'weaknesses': self.weaknesses,
         }
+
+
+# ==================== J15: SYSTEMATIC REVIEW MODELS ====================
+
+@dataclass
+class ScreeningResult:
+    """Abstract screening result"""
+    paper_title: str = ""
+    paper_doi: str = ""
+    decision: str = "uncertain"  # include, exclude, uncertain
+    score: float = 0.0
+    matched_inclusion: List[str] = field(default_factory=list)
+    matched_exclusion: List[str] = field(default_factory=list)
+    reason: str = ""
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class BiasAssessment:
+    """Risk of bias assessment"""
+    paper_title: str = ""
+    paper_doi: str = ""
+    overall_risk: str = "unclear"  # low, unclear, high
+    domains: Dict = field(default_factory=dict)  # domain -> risk level
+    study_type: str = ""
+    sample_size: int = 0
+    extracted_data: Dict = field(default_factory=dict)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class SystematicReviewReport:
+    """Full systematic review report"""
+    query: str = ""
+    expanded_query: str = ""
+    total_found: int = 0
+    total_screened: int = 0
+    included: int = 0
+    excluded: int = 0
+    uncertain: int = 0
+    screening_results: List[ScreeningResult] = field(default_factory=list)
+    bias_assessments: List[BiasAssessment] = field(default_factory=list)
+    study_types: Dict = field(default_factory=dict)
+    prisma_flow: Dict = field(default_factory=dict)
+
+    def to_dict(self) -> Dict:
+        return {
+            'query': self.query,
+            'expanded_query': self.expanded_query,
+            'total_found': self.total_found,
+            'total_screened': self.total_screened,
+            'included': self.included,
+            'excluded': self.excluded,
+            'uncertain': self.uncertain,
+            'screening_results': [s.to_dict() for s in self.screening_results],
+            'bias_assessments': [b.to_dict() for b in self.bias_assessments],
+            'study_types': self.study_types,
+            'prisma_flow': self.prisma_flow,
+        }
