@@ -176,3 +176,77 @@ class ResearchReport:
             'top_journals': self.top_journals,
             'top_keywords': self.top_keywords,
         }
+
+
+# ==================== J6: AUTHOR NETWORK MODELS ====================
+
+@dataclass
+class DisambiguatedAuthor:
+    """A disambiguated author identity — merged from multiple paper records"""
+    canonical_name: str
+    author_ids: List[str] = field(default_factory=list)       # OpenAlex/S2 IDs
+    orcids: List[str] = field(default_factory=list)
+    affiliations: List[str] = field(default_factory=list)
+    paper_count: int = 0
+    paper_titles: List[str] = field(default_factory=list)
+    paper_years: List[int] = field(default_factory=list)
+    topics: List[str] = field(default_factory=list)
+    coauthors: List[str] = field(default_factory=list)        # names of co-authors
+    total_citations: int = 0
+    h_index: int = 0
+
+    # Centrality scores (filled by network analysis)
+    degree_centrality: float = 0.0
+    betweenness_centrality: float = 0.0
+    closeness_centrality: float = 0.0
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+    def year_range(self) -> str:
+        if not self.paper_years:
+            return "N/A"
+        return f"{min(self.paper_years)}–{max(self.paper_years)}"
+
+
+@dataclass
+class CollaborationEdge:
+    """A co-authorship link between two authors"""
+    author_a: str
+    author_b: str
+    weight: int = 1               # number of co-authored papers
+    shared_papers: List[str] = field(default_factory=list)    # paper titles
+    years: List[int] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class NetworkReport:
+    """Full network analysis output"""
+    query: str = ""
+    total_authors: int = 0
+    total_edges: int = 0
+    total_papers_analyzed: int = 0
+    disambiguated_authors: List[DisambiguatedAuthor] = field(default_factory=list)
+    collaboration_edges: List[CollaborationEdge] = field(default_factory=list)
+    top_authors_by_degree: List[str] = field(default_factory=list)
+    top_authors_by_betweenness: List[str] = field(default_factory=list)
+    top_collaboration_pairs: List[Dict] = field(default_factory=list)
+    communities: List[List[str]] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            'query': self.query,
+            'total_authors': self.total_authors,
+            'total_edges': self.total_edges,
+            'total_papers_analyzed': self.total_papers_analyzed,
+            'disambiguated_authors': [a.to_dict() for a in self.disambiguated_authors],
+            'collaboration_edges': [e.to_dict() for e in self.collaboration_edges],
+            'top_authors_by_degree': self.top_authors_by_degree,
+            'top_authors_by_betweenness': self.top_authors_by_betweenness,
+            'top_collaboration_pairs': self.top_collaboration_pairs,
+            'communities': self.communities,
+        }
+

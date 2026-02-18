@@ -14,7 +14,7 @@ def setup_parser(subparsers):
     """Register journal subcommands to the main parser"""
     parser = subparsers.add_parser(
         'journal',
-        help='Journal article research scraper — search, cite, trend, recommend',
+        help='Journal article research scraper — search, cite, trend, recommend, author',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -24,7 +24,7 @@ Examples:
   python main.py journal trend "deep learning" --years 2015-2026
   python main.py journal recommend 10.1038/s41586-021-03819-2 --count 15
   python main.py journal harvest --topic "computer vision" --year 2025 --count 500
-  python main.py journal export results.json --format bibtex --output refs.bib
+  python main.py journal author "Geoffrey Hinton" --network --count 50
         """,
     )
 
@@ -90,6 +90,19 @@ Examples:
                            help='Export format (default: json)')
     harvest_p.add_argument('--output', type=str, default='.', help='Output directory')
 
+    # ── AUTHOR (J6) ──
+    author_p = sub.add_parser('author', help='Author disambiguation & network (Algorithm J6)')
+    author_p.add_argument('name', type=str, help='Author name to search')
+    author_p.add_argument('--count', type=int, default=50,
+                          help='Number of papers to fetch for analysis (default: 50)')
+    author_p.add_argument('--network', action='store_true',
+                          help='Build and analyze collaboration network')
+    author_p.add_argument('--year', type=str, help='Year range filter')
+    author_p.add_argument('--export', type=str,
+                          choices=['json', 'csv', 'markdown'],
+                          help='Export format')
+    author_p.add_argument('--output', type=str, default='.', help='Output directory')
+
     return parser
 
 
@@ -97,10 +110,11 @@ def run(args):
     """Execute journal commands"""
     from .api_client import OpenAlexClient, SemanticScholarClient, CrossRefClient
     from .search_engine import FederatedSearch, CitationCrawler, TrendAnalyzer, PaperRecommender
+    from .author_network import AuthorDisambiguator, CollaborationNetwork
     from .exporter import JournalExporter
 
     if not hasattr(args, 'command') or not args.command:
-        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest")
+        print("  [!] Gunakan subcommand: search, cite, trend, recommend, harvest, author")
         print("  💡 python main.py journal search \"machine learning\"")
         return
 
@@ -242,6 +256,63 @@ def run(args):
 
         query_label = args.query or args.topic or 'harvest'
         exporter.export(all_papers, args.export, query=query_label)
+
+    # ==================== AUTHOR NETWORK (J6) ====================
+    elif args.command == 'author':
+        oa = OpenAlexClient()
+
+        # Search papers by this author
+        print(f"\n  [👤] Searching papers by: {args.name}")
+        params = {
+            'search': args.name,
+            'per_page': min(args.count, 200),
+            'sort': 'cited_by_count:desc',
+        }
+        filters = [f'author.search:{args.name}']
+        if args.year:
+            parts = args.year.split('-')
+            if len(parts) == 2:
+                filters.append(f'from_publication_date:{parts[0]}-01-01')
+                filters.append(f'to_publication_date:{parts[1]}-12-31')
+        params['filter'] = ','.join(filters)
+
+        data = oa._request('works', params)
+        papers = [oa._parse_work(w) for w in data.get('results', [])]
+
+        if not papers:
+            print(f"  [!] No papers found for author: {args.name}")
+            return
+
+        print(f"  [✓] Found {len(papers)} papers")
+
+        # Disambiguate
+        dis = AuthorDisambiguator()
+        disambiguated = dis.disambiguate(papers)
+
+        # Show disambiguation results
+        print(f"\n  📋 Disambiguated Authors:")
+        print(f"  {'─'*55}")
+        for i, (key, author) in enumerate(
+            sorted(disambiguated.items(),
+                   key=lambda x: x[1].paper_count, reverse=True)[:15], 1
+        ):
+            aff = author.affiliations[0][:40] if author.affiliations else 'N/A'
+            print(f"  {i:2d}. {author.canonical_name} "
+                  f"({author.paper_count} papers, {author.year_range()})")
+            print(f"      📍 {aff}")
+
+        # Network analysis
+        if args.network:
+            net = CollaborationNetwork()
+            report = net.build_and_analyze(papers, disambiguated)
+            report.query = args.name
+            net.print_report(report)
+
+            if args.export == 'json':
+                filepath = Path(args.output) / f"network_{args.name.replace(' ', '_')[:20]}.json"
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+                print(f"  [✓] Exported → {filepath}")
 
     else:
         print(f"  [!] Unknown command: {args.command}")
