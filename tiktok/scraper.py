@@ -4,6 +4,7 @@ Core scraping functionality untuk profile, following, dan followers
 """
 
 import json
+import asyncio
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -11,6 +12,19 @@ from .models import TikTokProfile
 from .browser import BrowserManager
 from .parsers import parse_profile_data
 from .utils import load_cookies
+
+
+# CAPTCHA detection selectors
+CAPTCHA_SELECTORS = [
+    'div[class*="captcha"]',
+    'div[id*="captcha"]',
+    '#captcha-verify-container',
+    '#captcha_container',
+    'div[class*="Verify"]',
+    'div[data-e2e*="verify"]',
+    'iframe[src*="captcha"]',
+    'div[class*="secsdk"]',
+]
 
 
 class TikTokScraper:
@@ -44,6 +58,73 @@ class TikTokScraper:
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.browser_manager.close()
+    
+    # ==================== CAPTCHA HANDLING ====================
+    
+    async def _detect_captcha(self, page) -> bool:
+        """Check if CAPTCHA is present on page"""
+        # Check DOM selectors
+        for selector in CAPTCHA_SELECTORS:
+            try:
+                element = await page.query_selector(selector)
+                if element and await element.is_visible():
+                    return True
+            except:
+                continue
+        
+        # Check page content
+        try:
+            html = await page.content()
+            html_lower = html.lower()
+            if any(keyword in html_lower for keyword in [
+                'captcha', 'verify your identity', 'security check',
+                'verifikasi', 'secsdk-captcha'
+            ]):
+                return True
+        except:
+            pass
+        
+        return False
+    
+    async def _wait_for_captcha_solved(self, page, timeout: float = 300.0) -> bool:
+        """
+        Wait for user to manually solve CAPTCHA.
+        
+        Args:
+            page: Playwright page
+            timeout: Max wait time in seconds (default: 5 minutes)
+        
+        Returns:
+            True if CAPTCHA solved, False if timeout
+        """
+        if not await self._detect_captcha(page):
+            return True  # No CAPTCHA, continue
+        
+        print("\n" + "=" * 50)
+        print("[!] CAPTCHA DETECTED!")
+        print("[!] Silakan solve CAPTCHA secara manual di browser...")
+        print("[!] Scraper akan otomatis lanjut setelah CAPTCHA selesai.")
+        print(f"[!] Timeout: {int(timeout)} detik")
+        print("=" * 50)
+        
+        elapsed = 0.0
+        check_interval = 2.0
+        
+        while elapsed < timeout:
+            await asyncio.sleep(check_interval)
+            elapsed += check_interval
+            
+            # Check if CAPTCHA is gone
+            if not await self._detect_captcha(page):
+                print(f"\n[+] CAPTCHA solved! Melanjutkan scraping...")
+                await asyncio.sleep(2)  # Small delay after solve
+                return True
+            
+            remaining = int(timeout - elapsed)
+            print(f"[~] Menunggu CAPTCHA diselesaikan... ({remaining}s remaining)", end='\r')
+        
+        print(f"\n[X] Timeout! CAPTCHA tidak diselesaikan dalam {int(timeout)} detik")
+        return False
     
     # ==================== PROFILE SCRAPING ====================
     
@@ -92,10 +173,19 @@ class TikTokScraper:
                 print("[+] Data JSON ditemukan!")
                 return profile
             
-            # Check for CAPTCHA or errors
+            # Check for CAPTCHA
             html_lower = html.lower()
             if "captcha" in html_lower or "verify" in html_lower:
-                print("[!] CAPTCHA detected - coba jalankan tanpa --headless")
+                solved = await self._wait_for_captcha_solved(page)
+                if solved:
+                    # Re-fetch page content after CAPTCHA solved
+                    html = await page.content()
+                    profile = parse_profile_data(html, username)
+                    if profile:
+                        print("[+] Data JSON ditemukan setelah CAPTCHA!")
+                        return profile
+                    print("[!] CAPTCHA solved tapi data profil tidak ditemukan")
+                return None
             elif "couldn't find this account" in html_lower:
                 print(f"[!] Akun @{username} tidak ditemukan")
             else:
@@ -176,6 +266,9 @@ class TikTokScraper:
             await page.goto(url, wait_until='domcontentloaded', timeout=30000)
             await page.wait_for_load_state('networkidle', timeout=15000)
             await page.wait_for_timeout(2000)
+            
+            # Check for CAPTCHA and wait if detected
+            await self._wait_for_captcha_solved(page)
             
             # Klik tab
             print(f"[~] Mencari tab {tab_type.capitalize()}...")

@@ -23,6 +23,8 @@ from tiktok.export import DataExporter
 from tiktok.reconnaissance import TikTokReconnaissance
 from tiktok.injection import TikTokInjector
 from tiktok.maintenance import TikTokMaintenance
+from tiktok.dom_algorithms import DOMAlgorithmOrchestrator
+from tiktok.ai_analyzer import AIContextAnalyzer, AdaptiveStrategySelector
 
 
 def add_arguments(parser: argparse.ArgumentParser):
@@ -57,6 +59,9 @@ def add_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("--inject", action="store_true", help="Run DOM injection phase")
     parser.add_argument("--maintain", action="store_true", help="Run maintenance monitoring")
     parser.add_argument("--full-bypass", action="store_true", help="Run full bypass (recon+inject+maintain)")
+    parser.add_argument("--dom-deep", action="store_true", help="Run advanced DOM algorithms (D1-D15)")
+    parser.add_argument("--ai-analyze", action="store_true", help="AI context analysis via Ollama (MCP-D1)")
+    parser.add_argument("--ai-strategy", action="store_true", help="AI adaptive strategy (MCP-D2, includes MCP-D1)")
 
     # Export options
     parser.add_argument("--export", choices=['csv', 'excel', 'jsonl', 'graphml', 'gexf'],
@@ -98,6 +103,9 @@ async def _run_dom_bypass(scraper, username: str, args) -> dict:
         print(f"[~] Navigating to {url}")
         await page.goto(url, wait_until='domcontentloaded', timeout=30000)
         await page.wait_for_load_state('networkidle', timeout=15000)
+        
+        # Check for CAPTCHA and wait if detected
+        await scraper._wait_for_captcha_solved(page)
 
         # ===== PHASE 1: RECONNAISSANCE =====
         if args.recon or args.full_bypass:
@@ -155,12 +163,84 @@ async def _run_dom_bypass(scraper, username: str, args) -> dict:
                 path.write_text(json.dumps(results['maintenance'], indent=2, default=str), encoding='utf-8')
                 print(f"[+] Maintenance saved: {path}")
 
+        # ===== PHASE 4: ADVANCED DOM ALGORITHMS =====
+        if args.dom_deep or args.full_bypass:
+            print("\n[PHASE 4] Advanced DOM Algorithms (D1-D15)...")
+            orchestrator = DOMAlgorithmOrchestrator(page)
+            dom_results = await orchestrator.run_all()
+            results['dom_algorithms'] = dom_results
+
+            # Merge extracted users
+            if dom_results.get('users_extracted'):
+                for user in dom_results['users_extracted']:
+                    if user.get('username'):
+                        results['data_extracted'].append({
+                            'username': user['username'],
+                            'profile_url': f"https://www.tiktok.com/@{user['username']}",
+                            'source': user.get('source', 'dom_algorithm')
+                        })
+
+            if args.save:
+                path = Path(args.output) / f"dom_deep_{username}.json"
+                path.write_text(json.dumps(dom_results, indent=2, default=str), encoding='utf-8')
+                print(f"[+] DOM results saved: {path}")
+
+        # ===== PHASE 5: AI CONTEXT ANALYSIS =====
+        if args.ai_analyze or args.full_bypass:
+            print("\n[PHASE 5] AI Context Analysis (MCP-D1)...")
+            analyzer = AIContextAnalyzer(page)
+            ai_results = await analyzer.execute()
+            results['ai_analysis'] = ai_results
+
+            if ai_results.get('analysis'):
+                analysis = ai_results['analysis']
+                print(f"\n  🤖 AI Analysis Report:")
+                print(f"     Framework : {analysis.get('framework_detected', 'unknown')}")
+                print(f"     Anti-bot  : {', '.join(analysis.get('anti_bot_mechanisms', [])) or 'none'}")
+                for rec in analysis.get('bypass_recommendations', [])[:5]:
+                    print(f"     → {rec}")
+
+            if args.save:
+                path = Path(args.output) / f"ai_analysis_{username}.json"
+                path.write_text(json.dumps(ai_results, indent=2, default=str), encoding='utf-8')
+                print(f"[+] AI analysis saved: {path}")
+
+        # ===== PHASE 6: AI ADAPTIVE STRATEGY =====
+        if args.ai_strategy:
+            print("\n[PHASE 6] AI Adaptive Strategy (MCP-D2)...")
+            selector = AdaptiveStrategySelector(page)
+            # Pass MCP-D1 result if available
+            strategy_results = await selector.execute(results.get('ai_analysis'))
+            results['ai_strategy'] = strategy_results
+
+            # Merge extracted users
+            if strategy_results.get('users_extracted'):
+                for user in strategy_results['users_extracted']:
+                    if user.get('username'):
+                        results['data_extracted'].append({
+                            'username': user['username'],
+                            'profile_url': f"https://www.tiktok.com/@{user['username']}",
+                            'source': user.get('source', 'ai_strategy')
+                        })
+
+            if args.save:
+                path = Path(args.output) / f"ai_strategy_{username}.json"
+                path.write_text(json.dumps(strategy_results, indent=2, default=str), encoding='utf-8')
+                print(f"[+] AI strategy saved: {path}")
+
         # Print summary
         print(f"\n[===] DOM Bypass Complete [===]")
         if results['recon']:
             print(f"  Recon: {len(results['recon'].get('components', []))} components found")
         if results['injection']:
             print(f"  Injection: {results['injection'].get('success_count', 0)} successful")
+        if results.get('dom_algorithms'):
+            print(f"  DOM Deep: {results['dom_algorithms'].get('total_unique_users', 0)} users extracted")
+        if results.get('ai_analysis'):
+            print(f"  AI Analysis: {'✅' if results['ai_analysis'].get('success') else '❌'}")
+        if results.get('ai_strategy'):
+            s = results['ai_strategy']
+            print(f"  AI Strategy: {s.get('steps_succeeded',0)}/{s.get('steps_total',0)} steps, {s.get('total_unique_users',0)} users")
         if results['data_extracted']:
             print(f"  Data: {len(results['data_extracted'])} users extracted")
 
@@ -200,7 +280,8 @@ async def main(args):
     needs_cookies = (args.following or args.followers or args.bfs or args.dfs or
                      args.astar or args.bidirectional or args.random_walk or
                      args.influence or args.community or args.recon or args.inject or
-                     args.maintain or args.full_bypass)
+                     args.maintain or args.full_bypass or args.dom_deep or
+                     args.ai_analyze or args.ai_strategy)
     if needs_cookies and not args.cookies:
         print("\n[!] Fitur social memerlukan cookies!")
         print("    Gunakan: --cookies tiktok_cookies.json")
@@ -216,7 +297,13 @@ async def main(args):
 
     # Show algorithm/mode
     if args.full_bypass:
-        print(f"  Mode     : Full DOM Bypass")
+        print(f"  Mode     : Full DOM Bypass + Deep Algorithms + AI")
+    elif args.ai_strategy:
+        print(f"  Mode     : AI Adaptive Strategy (Ollama MCP-D2)")
+    elif args.ai_analyze:
+        print(f"  Mode     : AI Context Analysis (Ollama MCP-D1)")
+    elif args.dom_deep:
+        print(f"  Mode     : DOM Deep Algorithms (D1-D15)")
     elif args.recon:
         print(f"  Mode     : Reconnaissance Only")
     elif args.inject:
@@ -256,7 +343,7 @@ async def main(args):
             print(f"\n{'='*50}")
 
             # ===== DOM BYPASS MODES =====
-            if args.recon or args.inject or args.maintain or args.full_bypass:
+            if args.recon or args.inject or args.maintain or args.full_bypass or args.dom_deep or args.ai_analyze or args.ai_strategy:
                 bypass_results = await _run_dom_bypass(scraper, username, args)
 
                 # Use extracted data for export

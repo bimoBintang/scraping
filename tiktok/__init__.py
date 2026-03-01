@@ -25,6 +25,25 @@ from .export import DataExporter
 from .reconnaissance import TikTokReconnaissance
 from .injection import TikTokInjector
 from .maintenance import TikTokMaintenance
+from .dom_algorithms import (
+    DOMAlgorithmOrchestrator,
+    ShadowDOMPenetrator,
+    IFrameBridge,
+    VirtualDOMReconstructor,
+    DOMCloner,
+    EventLoopInterceptor,
+    MutationHistoryTracker,
+    PseudoElementExtractor,
+    CanvasWebGLCapture,
+    SVGForeignObjectParser,
+    WebComponentStateAccess,
+    LazyLoadingForceTrigger,
+    DOMFingerprintDetector,
+    JSContextIsolationBypass,
+    CSPBypassInlineHijack,
+    ServiceWorkerInterceptor
+)
+from .ai_analyzer import AIContextAnalyzer, PageIntelligenceCollector, AdaptiveStrategySelector
 
 # Stealth modules
 from .fingerprint import (
@@ -54,6 +73,29 @@ __all__ = [
     'TikTokReconnaissance',
     'TikTokInjector',
     'TikTokMaintenance',
+    
+    # Advanced DOM Algorithms
+    'DOMAlgorithmOrchestrator',
+    'ShadowDOMPenetrator',
+    'IFrameBridge',
+    'VirtualDOMReconstructor',
+    'DOMCloner',
+    'EventLoopInterceptor',
+    'MutationHistoryTracker',
+    'PseudoElementExtractor',
+    'CanvasWebGLCapture',
+    'SVGForeignObjectParser',
+    'WebComponentStateAccess',
+    'LazyLoadingForceTrigger',
+    'DOMFingerprintDetector',
+    'JSContextIsolationBypass',
+    'CSPBypassInlineHijack',
+    'ServiceWorkerInterceptor',
+    
+    # AI Analysis
+    'AIContextAnalyzer',
+    'PageIntelligenceCollector',
+    'AdaptiveStrategySelector',
     
     # Export
     'DataExporter',
@@ -97,4 +139,4 @@ __all__ = [
     'async_retry',
 ]
 
-__version__ = '4.2.0'
+__version__ = '5.1.0'
