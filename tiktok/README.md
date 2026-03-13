@@ -1,5 +1,6 @@
 # TikTok Scraper Package v5.1.0
 
+https://chat.deepseek.com/share/vt6phw3j6qo3ra5wse
 Advanced TikTok scraper with graph algorithms, 15 DOM bypass algorithms, AI-powered analysis (Ollama), stealth engine, real-time monitoring, and multi-format export.
 
 ## Architecture
