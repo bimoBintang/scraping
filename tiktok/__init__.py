@@ -52,6 +52,11 @@ from .fingerprint import (
 )
 from .human_behavior import HumanBehavior, HumanMouse, HumanScroll, HumanTyping
 from .isolation import SessionIsolator, EmergencyWipe, IdentityRotationPolicy
+from .advanced_stealth import (
+    BehavioralFingerprintSpoofer, BehavioralStatistics,
+    PatternCache, PatternAnalytics, DemographicProfile,
+    BehavioralPattern, DEMOGRAPHIC_PRESETS
+)
 from .async_utils import with_timeout, safe_evaluate, async_retry
 
 __all__ = [
@@ -137,6 +142,15 @@ __all__ = [
     'with_timeout',
     'safe_evaluate',
     'async_retry',
+    
+    # Advanced Stealth
+    'BehavioralFingerprintSpoofer',
+    'BehavioralStatistics',
+    'PatternCache',
+    'PatternAnalytics',
+    'DemographicProfile',
+    'BehavioralPattern',
+    'DEMOGRAPHIC_PRESETS',
 ]
 
 __version__ = '5.1.0'
